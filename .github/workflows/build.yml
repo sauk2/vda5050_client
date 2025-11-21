@@ -29,6 +29,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: apt-get install libpaho-mqtt-dev libpaho-mqttpp-dev libfmt-dev
+        run: |
+          apt-get update -qq -y
+          apt-get install libpaho-mqtt-dev libpaho-mqttpp-dev libfmt-dev -qq -y
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{ matrix.env }}
