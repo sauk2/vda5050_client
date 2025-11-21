@@ -12,6 +12,7 @@ jobs:
   industrial_ci:
     name: Build and test
     strategy:
+      fail-fast: false
       matrix:
         env:
           - ICI_JOB_NAME: gcc
