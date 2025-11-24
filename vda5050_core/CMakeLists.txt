@@ -8,6 +8,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(PahoMqttCpp REQUIRED)
 find_package(fmt REQUIRED)
+find_package(vda5050_types REQUIRED)
 
 include(GNUInstallDirs)
 
@@ -33,11 +34,23 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+add_library(order_graph_validator src/vda5050_core/order_graph_validator/order_graph_validator.cpp)
+target_link_libraries(order_graph_validator
+  PRIVATE
+    vda5050_types::vda5050_types
+)
+target_include_directories(order_graph_validator
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
 add_library(vda5050_core INTERFACE)
 target_link_libraries(vda5050_core
   INTERFACE
     mqtt_client
     logger
+    order_graph_validator
 )
 target_include_directories(vda5050_core
   INTERFACE
@@ -54,6 +67,7 @@ install(
   TARGETS
     mqtt_client
     logger
+    order_graph_validator
     vda5050_core
   EXPORT export_vda5050_core
   LIBRARY DESTINATION lib
@@ -69,7 +83,7 @@ install(
 )
 
 ament_export_targets(export_vda5050_core HAS_LIBRARY_TARGET)
-ament_export_dependencies(PahoMqttCpp fmt)
+ament_export_dependencies(PahoMqttCpp fmt vda5050_types)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_cppcheck REQUIRED)
@@ -94,6 +108,19 @@ if(BUILD_TESTING)
     test/integration/mqtt_client/test_paho_mqtt_client.cpp
   )
   target_link_libraries(test_mqtt_client mqtt_client logger)
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(order_graph_validator_test
+    test/unit/order_graph_validator/test_order_graph_validator.cpp
+    src/vda5050_core/order_graph_validator/order_graph_validator.cpp
+  )
+  target_link_libraries(order_graph_validator_test
+    vda5050_types::vda5050_types
+    order_graph_validator
+  )
+  target_include_directories(order_graph_validator_test
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 endif()
 
 ament_package()
