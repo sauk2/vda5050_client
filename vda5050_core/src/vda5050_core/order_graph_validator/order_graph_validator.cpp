@@ -20,9 +20,9 @@
 #include <queue>
 #include <vector>
 
+#include "vda5050_core/order_graph_validator/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
-#include "vda5050_core/order_graph_validator/order_graph_validator.hpp"
 
 namespace vda5050_core {
 namespace order_graph_validator {
@@ -140,9 +140,7 @@ bool OrderGraphValidator::is_valid_edges(
 {
   for (vda5050_types::Edge e : edges)
   {
-    if (
-      e.start_node_id != start_node_id &&
-      e.end_node_id != end_node_id)
+    if (e.start_node_id != start_node_id && e.end_node_id != end_node_id)
     {
       return false;
     }
