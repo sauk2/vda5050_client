@@ -20,8 +20,8 @@
 #include <queue>
 #include <vector>
 
-#include "vda5050_core/order_execution/edge.hpp"
-#include "vda5050_core/order_execution/node.hpp"
+#include "vda5050_types/edge.hpp"
+#include "vda5050_types/node.hpp"
 #include "vda5050_core/order_graph_validator/order_graph_validator.hpp"
 
 namespace vda5050_core {
@@ -32,8 +32,8 @@ namespace order_graph_validator {
 OrderGraphValidator::OrderGraphValidator() {}
 
 bool OrderGraphValidator::is_valid_graph(
-  std::vector<vda5050_core::node::Node>& nodes,
-  std::vector<vda5050_core::edge::Edge>& edges)
+  std::vector<vda5050_types::Node>& nodes,
+  std::vector<vda5050_types::Edge>& edges)
 {
   /// TODO: (shawnkchan) Check if it is even possible to send an Order with zero nodes (should Order class just protect against this?). If not possible, get rid of this.
   /// Does not seem to be any guarantee that this list is not empty, so will leave this check here.
@@ -44,8 +44,8 @@ bool OrderGraphValidator::is_valid_graph(
   }
   else
   {
-    start_node_id = nodes.front().node_id();
-    end_node_id = nodes.back().node_id();
+    start_node_id = nodes.front().node_id;
+    end_node_id = nodes.back().node_id;
   }
 
   if (nodes.size() == 1)
@@ -80,34 +80,34 @@ bool OrderGraphValidator::is_valid_graph(
 }
 
 bool OrderGraphValidator::is_in_traversal_order(
-  std::vector<vda5050_core::node::Node>& nodes,
-  std::vector<vda5050_core::edge::Edge>& edges)
+  std::vector<vda5050_types::Node>& nodes,
+  std::vector<vda5050_types::Edge>& edges)
 {
-  std::queue<vda5050_core::node::Node> node_queue;
-  std::queue<vda5050_core::edge::Edge> edge_queue;
+  std::queue<vda5050_types::Node> node_queue;
+  std::queue<vda5050_types::Edge> edge_queue;
 
-  for (vda5050_core::node::Node n : nodes)
+  for (vda5050_types::Node n : nodes)
   {
     node_queue.push(n);
   }
 
-  for (vda5050_core::edge::Edge e : edges)
+  for (vda5050_types::Edge e : edges)
   {
     edge_queue.push(e);
   }
 
-  vda5050_core::node::Node first_node{node_queue.front()};
+  vda5050_types::Node first_node{node_queue.front()};
   node_queue.pop();
-  uint32_t latest_sequence_id{first_node.sequence_id()};
+  uint32_t latest_sequence_id{first_node.sequence_id};
   while (node_queue.size() != 0 && edge_queue.size() != 0)
   {
     if (node_queue.size() > edge_queue.size())
     {
-      vda5050_core::node::Node n{node_queue.front()};
-      if (latest_sequence_id == n.sequence_id() - 1)
+      vda5050_types::Node n{node_queue.front()};
+      if (latest_sequence_id == n.sequence_id - 1)
       {
         node_queue.pop();
-        latest_sequence_id = n.sequence_id();
+        latest_sequence_id = n.sequence_id;
       }
 
       else
@@ -119,11 +119,11 @@ bool OrderGraphValidator::is_in_traversal_order(
     /// if there are an equal number of edges and nodes, then check the next edge in the queue
     else if (node_queue.size() == edge_queue.size())
     {
-      vda5050_core::edge::Edge e{edge_queue.front()};
-      if (latest_sequence_id == e.sequence_id() - 1)
+      vda5050_types::Edge e{edge_queue.front()};
+      if (latest_sequence_id == e.sequence_id - 1)
       {
         edge_queue.pop();
-        latest_sequence_id = e.sequence_id();
+        latest_sequence_id = e.sequence_id;
       }
 
       else
@@ -136,13 +136,13 @@ bool OrderGraphValidator::is_in_traversal_order(
 }
 
 bool OrderGraphValidator::is_valid_edges(
-  std::vector<vda5050_core::edge::Edge>& edges)
+  std::vector<vda5050_types::Edge>& edges)
 {
-  for (vda5050_core::edge::Edge e : edges)
+  for (vda5050_types::Edge e : edges)
   {
     if (
-      e.start_node_id() != start_node_id &&
-      e.end_node_id() != end_node_id)
+      e.start_node_id != start_node_id &&
+      e.end_node_id != end_node_id)
     {
       return false;
     }

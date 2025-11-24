@@ -21,8 +21,8 @@
 
 #include <vector>
 
-#include "vda5050_core/order_execution/edge.hpp"
-#include "vda5050_core/order_execution/node.hpp"
+#include "vda5050_types/edge.hpp"
+#include "vda5050_types/node.hpp"
 
 namespace vda5050_core {
 namespace order_graph_validator {
@@ -37,12 +37,12 @@ public:
   ///
   /// \return True if nodes and edges create a valid graph, false otherwise
   bool is_valid_graph(
-    std::vector<vda5050_core::node::Node>& nodes,
-    std::vector<vda5050_core::edge::Edge>& edges);
+    std::vector<vda5050_types::Node>& nodes,
+    std::vector<vda5050_types::Edge>& edges);
 
 private:
-  // std::vector<vda5050_core::node::Node>& nodes;
-  // std::vector<vda5050_core::edge::Edge>& edges;
+  // std::vector<vda5050_types::Node>& nodes;
+  // std::vector<vda5050_types::Edge>& edges;
 
   std::string start_node_id;
   std::string end_node_id;
@@ -51,13 +51,13 @@ private:
   ///
   /// \return True if nodes and edges are arranged according to their sequenceId, false otherwise
   bool is_in_traversal_order(
-    std::vector<vda5050_core::node::Node>& nodes,
-    std::vector<vda5050_core::edge::Edge>& edges);
+    std::vector<vda5050_types::Node>& nodes,
+    std::vector<vda5050_types::Edge>& edges);
 
   /// \brief Checks that startNodeId and endNodeId of all edges in a VDA5050 Order match with its the start and end nodeIds
   ///
   /// \return True if all edges' startNodeId and endNodId match, false otherwise
-  bool is_valid_edges(std::vector<vda5050_core::edge::Edge>& edges);
+  bool is_valid_edges(std::vector<vda5050_types::Edge>& edges);
 };
 
 }  // namespace order_graph_validator
