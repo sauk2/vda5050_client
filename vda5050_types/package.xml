@@ -4,7 +4,7 @@
   <name>vda5050_types</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="saurabh_kamat@artc.a-star.edu.sg">Saurabh Kamat</maintainer>
+  <maintainer email="saurabh_kamat@a-star.edu.sg">Saurabh Kamat</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
