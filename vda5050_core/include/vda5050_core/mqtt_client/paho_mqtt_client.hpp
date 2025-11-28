@@ -23,6 +23,7 @@
 #include <mqtt/callback.h>
 #include <mqtt/connect_options.h>
 #include <mqtt/iaction_listener.h>
+#include <mqtt/will_options.h>
 
 #include <memory>
 #include <mutex>
@@ -104,6 +105,8 @@ public:
   // Documentation inherited from MqttClientInterface
   void disconnect() override;
 
+  bool connected() override;
+
   // Documentation inherited from MqttClientInterface
   void publish(
     const std::string& topic, const std::string& message, int qos) override;
@@ -111,6 +114,9 @@ public:
   // Documentation inherited from MqttClientInterface
   void subscribe(
     const std::string& topic, MessageHandler handler, int qos) override;
+
+  void set_will(
+    const std::string& topic, const std::string& message, int qos) override;
 
   friend class MqttCallback;
 
@@ -136,6 +142,8 @@ private:
 
   /// \brief Mutex protecting list of message handlers
   std::mutex handler_mutex_;
+
+  mqtt::connect_options conn_options_;
 };
 
 }  // namespace mqtt_client
