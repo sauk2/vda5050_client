@@ -21,8 +21,8 @@
 
 #include <vector>
 
-#include "vda5050_types/edge.hpp"
-#include "vda5050_types/node.hpp"
+#include "vda5050_types/order.hpp"
+#include "vda5050_core/client/order/validation_result.hpp"
 
 namespace vda5050_core {
 namespace client {
@@ -32,33 +32,21 @@ namespace order {
 class OrderGraphValidator
 {
 public:
-  OrderGraphValidator();
-
   /// \brief Checks that the nodes and edges in a VDA5050 Order form a valid graph according to the VDA5050 specification sheet.
   ///
   /// \return True if nodes and edges create a valid graph, false otherwise
-  bool is_valid_graph(
-    std::vector<vda5050_types::Node>& nodes,
-    std::vector<vda5050_types::Edge>& edges);
+  static inline ValidationResult is_valid_graph(const vda5050_types::Order& order);
 
 private:
-  // std::vector<vda5050_types::Node>& nodes;
-  // std::vector<vda5050_types::Edge>& edges;
-
-  std::string start_node_id;
-  std::string end_node_id;
-
   /// \brief Checks that the nodes and edges contained in a VDA5050 Order are arranged according to their sequenceId
   ///
   /// \return True if nodes and edges are arranged according to their sequenceId, false otherwise
-  bool is_in_traversal_order(
-    std::vector<vda5050_types::Node>& nodes,
-    std::vector<vda5050_types::Edge>& edges);
+  static inline ValidationResult is_in_traversal_order(const vda5050_types::Order& order);
 
   /// \brief Checks that startNodeId and endNodeId of all edges in a VDA5050 Order match with its the start and end nodeIds
   ///
   /// \return True if all edges' startNodeId and endNodId match, false otherwise
-  bool is_valid_edges(std::vector<vda5050_types::Edge>& edges);
+  static inline ValidationResult is_valid_edges(const vda5050_types::Order& order);
 };
 
 }  // namespace order
