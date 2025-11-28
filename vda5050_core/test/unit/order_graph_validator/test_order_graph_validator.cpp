@@ -19,7 +19,7 @@
 #include <gtest/gtest.h>
 #include <optional>
 
-#include "vda5050_core/client/order_graph_validator.hpp"
+#include "vda5050_core/client/order/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
 
