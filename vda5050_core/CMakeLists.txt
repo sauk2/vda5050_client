@@ -116,6 +116,7 @@ if(BUILD_TESTING)
   target_link_libraries(order_graph_validator_test
     vda5050_types::vda5050_types
     client
+    logger
   )
   target_include_directories(order_graph_validator_test
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
