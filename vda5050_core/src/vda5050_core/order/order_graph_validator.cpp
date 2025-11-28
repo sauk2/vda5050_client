@@ -20,15 +20,12 @@
 #include <queue>
 #include <vector>
 
-#include "vda5050_core/order_graph_validator/order_graph_validator.hpp"
+#include "vda5050_core/order/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
 
 namespace vda5050_core {
 namespace order_graph_validator {
-
-/// TODO (shawnkchan) maybe this should take in an Order object instead so that we can specify which orderId is errornous if something goes wrong
-/// TODO Refactor this to take in an Order object instead, will make validation logic easier
 OrderGraphValidator::OrderGraphValidator() {}
 
 bool OrderGraphValidator::is_valid_graph(

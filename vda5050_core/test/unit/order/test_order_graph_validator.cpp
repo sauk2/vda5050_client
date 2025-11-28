@@ -19,14 +19,13 @@
 #include <gtest/gtest.h>
 #include <optional>
 
-#include "vda5050_core/order_graph_validator/order_graph_validator.hpp"
+#include "vda5050_core/order/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
 
 class OrderGraphValidatorTest : public testing::Test
 {
 protected:
-  /// TODO change released state for future tests
   vda5050_types::Node n1_{"node1", 1, true, {}, std::nullopt, std::nullopt};
   vda5050_types::Edge e2_{"edge2",      2,
                           "node1",      "node5",
