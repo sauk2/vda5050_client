@@ -20,11 +20,10 @@
 
 #include <vda5050_bt_execution/bt_execution/execution_engine.hpp>
 
-using namespace vda5050_bt_execution;
-
 int main()
 {
-  auto execution_engine = ExecutionEngine::make_and_init();
+  auto execution_engine =
+    vda5050_bt_execution::ExecutionEngine::make_and_init();
   VDA5050_INFO("Starting VDA5050 Client...");
 
   for (int i = 0; i < 25; i++)
