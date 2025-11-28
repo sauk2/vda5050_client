@@ -21,6 +21,8 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 
+#include <string>
+
 namespace vda5050_bt_execution {
 
 class UpdateState : public BT::StatefulActionNode

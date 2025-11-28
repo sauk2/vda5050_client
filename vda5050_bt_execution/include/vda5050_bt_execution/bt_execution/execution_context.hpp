@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_BT_EXECUTION__EXECUTION_CONTEXT_HPP_
-#define VDA5050_BT_EXECUTION__EXECUTION_CONTEXT_HPP_
+#ifndef VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_CONTEXT_HPP_
+#define VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_CONTEXT_HPP_
 
 #include <memory>
 #include <mutex>
@@ -38,4 +38,4 @@ struct ExecutionContext
 
 }  // namespace vda5050_bt_execution
 
-#endif  // VDA5050_BT_EXECUTION__EXECUTION_CONTEXT_HPP_
+#endif  // VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_CONTEXT_HPP_

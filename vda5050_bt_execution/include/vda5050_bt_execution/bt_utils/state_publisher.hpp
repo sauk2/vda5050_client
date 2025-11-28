@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_BT_EXECUTION__STATE_PUBLISHER_HPP_
-#define VDA5050_BT_EXECUTION__STATE_PUBLISHER_HPP_
+#ifndef VDA5050_BT_EXECUTION__BT_UTILS__STATE_PUBLISHER_HPP_
+#define VDA5050_BT_EXECUTION__BT_UTILS__STATE_PUBLISHER_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -42,7 +42,7 @@ public:
   void tick();
 
 private:
-  StatePublisher(std::chrono::seconds period);
+  explicit StatePublisher(std::chrono::seconds period);
 
   std::function<void()> publish_callback_;
   std::atomic_bool pending_event_publish_;
@@ -52,4 +52,4 @@ private:
 
 }  // namespace vda5050_bt_execution
 
-#endif  // VDA5050_BT_EXECUTION__STATE_PUBLISHER_HPP_
+#endif  // VDA5050_BT_EXECUTION__BT_UTILS__STATE_PUBLISHER_HPP_

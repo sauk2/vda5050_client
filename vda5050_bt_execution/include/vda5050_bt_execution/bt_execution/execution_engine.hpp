@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_BT_EXECUTION__EXECUTION_ENGINE_HPP_
-#define VDA5050_BT_EXECUTION__EXECUTION_ENGINE_HPP_
+#ifndef VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_ENGINE_HPP_
+#define VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_ENGINE_HPP_
+
+#include <behaviortree_cpp/bt_factory.h>
 
 #include <atomic>
 #include <chrono>
 #include <memory>
-
-#include <behaviortree_cpp/bt_factory.h>
 
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
 
@@ -56,4 +56,4 @@ private:
 
 }  // namespace vda5050_bt_execution
 
-#endif  // VDA5050_BT_EXECUTION__EXECUTION_ENGINE_HPP_
+#endif  // VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_ENGINE_HPP_
