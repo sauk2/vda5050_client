@@ -28,17 +28,39 @@ namespace client {
 namespace order {
 
 /// \brief Struct that details the validity of an order
-struct ValidationResult {
-    /// \brief True if an order is valid, false otherwise 
-    bool valid;
+struct ValidationResult
+{
+  /// \brief True if an order is valid, false otherwise
+  bool valid;
 
-    /// \brief A vector of error(s) that resulted in an invalid order. Empty if order is valid. 
-    std::vector<vda5050_types::Error> errors;
+  /// \brief A vector of error(s) that resulted in an invalid order. Empty if order is valid.
+  std::vector<vda5050_types::Error> errors;
+
+  /// \brief Equality operator
+  ///
+  /// \param other The other object to compare to
+  ///
+  /// \return is equal?
+  inline bool operator==(const ValidationResult& other) const
+  {
+    if (this->valid != other.valid) return false;
+    if (this->errors != other.errors) return false;
+    return true;
+  }
+
+  /// \brief Inequality operator
+  ///
+  /// \param other The other object to compare to
+  ///
+  /// \return is not equal?
+  inline bool operator!=(const ValidationResult& other) const
+  {
+    return !(this->operator==(other));
+  }
 };
 
 }  // namespace order
-}  // namepsace client
+}  // namespace client
 }  // namespace vda5050_core
 
-
-#endif // VDA5050_CORE__CLIENT__ORDER__VALIDATION_RESULT_HPP_
+#endif  // VDA5050_CORE__CLIENT__ORDER__VALIDATION_RESULT_HPP_
