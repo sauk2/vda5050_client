@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_CORE__ORDER_GRAPH_VALIDATOR__ORDER_GRAPH_VALIDATOR_HPP_
-#define VDA5050_CORE__ORDER_GRAPH_VALIDATOR__ORDER_GRAPH_VALIDATOR_HPP_
+#ifndef VDA5050_CORE__CLIENT__ORDER__ORDER_GRAPH_VALIDATOR_HPP_
+#define VDA5050_CORE__CLIENT__ORDER__ORDER_GRAPH_VALIDATOR_HPP_
 
 #include <vector>
 
@@ -25,7 +25,8 @@
 #include "vda5050_types/node.hpp"
 
 namespace vda5050_core {
-namespace order_graph_validator {
+namespace client {
+namespace order {
 
 /// \brief Utility class with functions to perform validity checks on the graph contained in a VDA5050 Order message
 class OrderGraphValidator
@@ -60,6 +61,7 @@ private:
   bool is_valid_edges(std::vector<vda5050_types::Edge>& edges);
 };
 
-}  // namespace order_graph_validator
+}  // namespace order
+}  // namespace client
 }  // namespace vda5050_core
-#endif  // VDA5050_CORE__ORDER_GRAPH_VALIDATOR__ORDER_GRAPH_VALIDATOR_HPP_
+#endif  // VDA5050_CORE__CLIENT__ORDER__ORDER_GRAPH_VALIDATOR_HPP_

@@ -61,7 +61,7 @@ TEST_F(OrderGraphValidatorTest, ValidGraphTest)
   edges.push_back(e4_);
   nodes.push_back(n5_);
 
-  vda5050_core::order_graph_validator::OrderGraphValidator graph_validator{};
+  vda5050_core::client::order::OrderGraphValidator graph_validator{};
 
   EXPECT_TRUE(graph_validator.is_valid_graph(nodes, edges));
 }
@@ -78,7 +78,7 @@ TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
   edges.push_back(e2_);
   nodes.push_back(n5_);
 
-  vda5050_core::order_graph_validator::OrderGraphValidator graph_validator{};
+  vda5050_core::client::order::OrderGraphValidator graph_validator{};
 
   EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
 }
@@ -92,7 +92,7 @@ TEST_F(OrderGraphValidatorTest, ZeroNodesTest)
   EXPECT_EQ(nodes.size(), 0);
   EXPECT_EQ(edges.size(), 0);
 
-  vda5050_core::order_graph_validator::OrderGraphValidator graph_validator{};
+  vda5050_core::client::order::OrderGraphValidator graph_validator{};
 
   EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
 }
@@ -114,7 +114,7 @@ TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
 
   nodes.push_back(n5_);
 
-  vda5050_core::order_graph_validator::OrderGraphValidator graph_validator{};
+  vda5050_core::client::order::OrderGraphValidator graph_validator{};
 
   EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
 }

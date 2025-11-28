@@ -25,7 +25,8 @@
 #include "vda5050_types/node.hpp"
 
 namespace vda5050_core {
-namespace order_graph_validator {
+namespace client {
+namespace order {
 OrderGraphValidator::OrderGraphValidator() {}
 
 bool OrderGraphValidator::is_valid_graph(
@@ -145,5 +146,6 @@ bool OrderGraphValidator::is_valid_edges(
   return true;
 }
 
-}  // namespace order_graph_validator
+}  // namespace order
+}  // namespace client
 }  // namespace vda5050_core
