@@ -19,7 +19,6 @@
 #ifndef VDA5050_JSON_UTILS__SERIALIZATION_HPP_
 #define VDA5050_JSON_UTILS__SERIALIZATION_HPP_
 
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -40,6 +39,7 @@
 #include <vda5050_types/header.hpp>
 #include <vda5050_types/info.hpp>
 #include <vda5050_types/info_reference.hpp>
+#include <vda5050_types/instant_actions.hpp>
 #include <vda5050_types/load.hpp>
 #include <vda5050_types/node.hpp>
 #include <vda5050_types/node_position.hpp>
@@ -51,25 +51,26 @@
 #include <vda5050_types/velocity.hpp>
 
 #ifdef ENABLE_ROS2
-#include <vda5050_msgs/msg/action_state.hpp>
-#include <vda5050_msgs/msg/agv_position.hpp>
-#include <vda5050_msgs/msg/battery_state.hpp>
-#include <vda5050_msgs/msg/bounding_box_reference.hpp>
-#include <vda5050_msgs/msg/connection.hpp>
-#include <vda5050_msgs/msg/edge_state.hpp>
-#include <vda5050_msgs/msg/error.hpp>
-#include <vda5050_msgs/msg/error_reference.hpp>
-#include <vda5050_msgs/msg/header.hpp>
-#include <vda5050_msgs/msg/info.hpp>
-#include <vda5050_msgs/msg/info_reference.hpp>
-#include <vda5050_msgs/msg/load.hpp>
-#include <vda5050_msgs/msg/node_position.hpp>
-#include <vda5050_msgs/msg/node_state.hpp>
-#include <vda5050_msgs/msg/order.hpp>
-#include <vda5050_msgs/msg/safety_state.hpp>
-#include <vda5050_msgs/msg/state.hpp>
-#include <vda5050_msgs/msg/trajectory.hpp>
-#include <vda5050_msgs/msg/velocity.hpp>
+#include <vda5050_interfaces/msg/action_state.hpp>
+#include <vda5050_interfaces/msg/agv_position.hpp>
+#include <vda5050_interfaces/msg/battery_state.hpp>
+#include <vda5050_interfaces/msg/bounding_box_reference.hpp>
+#include <vda5050_interfaces/msg/connection.hpp>
+#include <vda5050_interfaces/msg/edge_state.hpp>
+#include <vda5050_interfaces/msg/error.hpp>
+#include <vda5050_interfaces/msg/error_reference.hpp>
+#include <vda5050_interfaces/msg/header.hpp>
+#include <vda5050_interfaces/msg/info.hpp>
+#include <vda5050_interfaces/msg/info_reference.hpp>
+#include <vda5050_interfaces/msg/instant_actions.hpp>
+#include <vda5050_interfaces/msg/load.hpp>
+#include <vda5050_interfaces/msg/node_position.hpp>
+#include <vda5050_interfaces/msg/node_state.hpp>
+#include <vda5050_interfaces/msg/order.hpp>
+#include <vda5050_interfaces/msg/safety_state.hpp>
+#include <vda5050_interfaces/msg/state.hpp>
+#include <vda5050_interfaces/msg/trajectory.hpp>
+#include <vda5050_interfaces/msg/velocity.hpp>
 #endif  // ENABLE_ROS2
 
 #include "traits.hpp"
@@ -1580,6 +1581,28 @@ void from_json(const nlohmann::json& j, OrderT& msg)
 
 }  // namespace order_detail
 
+namespace instant_actions_detail {
+
+//=============================================================================
+template <typename InstantActionsT>
+void to_json(nlohmann::json& j, const InstantActionsT& msg)
+{
+  to_json(j, msg.header);
+
+  j["actions"] = msg.actions;
+}
+
+//=============================================================================
+template <typename InstantActionsT>
+void from_json(const nlohmann::json& j, InstantActionsT& msg)
+{
+  from_json(j, msg.header);
+
+  msg.actions = j.at("actions");
+}
+
+}  // namespace instant_actions_detail
+
 }  // namespace vda5050_types
 
 //=============================================================================
@@ -1835,11 +1858,21 @@ inline void from_json(const nlohmann::json& j, Order& msg)
   vda5050_types::order_detail::from_json(j, msg);
 }
 
+inline void to_json(nlohmann::json& j, const InstantActions& msg)
+{
+  vda5050_types::instant_actions_detail::to_json(j, msg);
+}
+
+inline void from_json(const nlohmann::json& j, InstantActions& msg)
+{
+  vda5050_types::instant_actions_detail::from_json(j, msg);
+}
+
 }  // namespace vda5050_types
 
 //=============================================================================
 #ifdef ENABLE_ROS2
-namespace vda5050_msgs {
+namespace vda5050_interfaces {
 
 namespace msg {
 
@@ -2093,9 +2126,19 @@ inline void from_json(const nlohmann::json& j, Order& msg)
   vda5050_types::order_detail::from_json(j, msg);
 }
 
+inline void to_json(nlohmann::json& j, const InstantActions& msg)
+{
+  vda5050_types::instant_actions_detail::to_json(j, msg);
+}
+
+inline void from_json(const nlohmann::json& j, InstantActions& msg)
+{
+  vda5050_types::instant_actions_detail::from_json(j, msg);
+}
+
 }  // namespace msg
 
-}  // namespace vda5050_msgs
+}  // namespace vda5050_interfaces
 #endif  // ENABLE_ROS2
 
 #endif  // VDA5050_JSON_UTILS__SERIALIZATION_HPP_
