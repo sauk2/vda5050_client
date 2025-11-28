@@ -34,12 +34,12 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(order_graph_validator src/vda5050_core/order_graph_validator/order_graph_validator.cpp)
-target_link_libraries(order_graph_validator
+add_library(client src/vda5050_core/client/order_graph_validator.cpp)
+target_link_libraries(client
   PRIVATE
     vda5050_types::vda5050_types
 )
-target_include_directories(order_graph_validator
+target_include_directories(client
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -50,7 +50,7 @@ target_link_libraries(vda5050_core
   INTERFACE
     mqtt_client
     logger
-    order_graph_validator
+    client
 )
 target_include_directories(vda5050_core
   INTERFACE
@@ -67,7 +67,7 @@ install(
   TARGETS
     mqtt_client
     logger
-    order_graph_validator
+    client
     vda5050_core
   EXPORT export_vda5050_core
   LIBRARY DESTINATION lib
@@ -112,11 +112,10 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(order_graph_validator_test
     test/unit/order_graph_validator/test_order_graph_validator.cpp
-    src/vda5050_core/order_graph_validator/order_graph_validator.cpp
   )
   target_link_libraries(order_graph_validator_test
     vda5050_types::vda5050_types
-    order_graph_validator
+    client
   )
   target_include_directories(order_graph_validator_test
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

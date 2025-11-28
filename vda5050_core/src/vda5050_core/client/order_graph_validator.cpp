@@ -20,7 +20,7 @@
 #include <queue>
 #include <vector>
 
-#include "vda5050_core/order/order_graph_validator.hpp"
+#include "vda5050_core/client/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
 
