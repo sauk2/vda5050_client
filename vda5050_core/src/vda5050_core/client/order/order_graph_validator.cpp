@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <queue>
-#include <vector>
 #include <string>
-#include <algorithm>
+#include <vector>
 #include <variant>
+#include <fmt/core.h>
 
 #include "vda5050_core/client/order/order_graph_validator.hpp"
 #include "vda5050_types/edge.hpp"
@@ -40,14 +42,13 @@ ValidationResult OrderGraphValidator::is_valid_graph(const vda5050_types::Order&
   /// impossible for number of nodes to exceed number of edges by 1
   if (!(order.nodes.size() - 1 == order.edges.size()))
   {
-    VDA5050_ERROR("Graph Validation Error: Difference in number of nodes and edges is not 1.");
+    VDA5050_ERROR("Graph Validation Error: The order.edges.size() must be order.nodes.size() - 1.");
 
     vda5050_types::Error graph_validation_error {"Graph Validation Error", std::vector {vda5050_types::ErrorReference{"orderId", order.order_id}, vda5050_types::ErrorReference{"orderUpdateId", std::to_string(order.order_update_id)}}, "Difference in number of nodes and edges in the given order is not 1.", vda5050_types::ErrorLevel::FATAL
     };
 
     res.valid = false;
     res.errors.push_back(graph_validation_error);
-
     return res;
   }
 
@@ -58,24 +59,20 @@ ValidationResult OrderGraphValidator::is_valid_graph(const vda5050_types::Order&
   }
 
   /// if there is more than one node and at least one edge, check that their sequenceIds are in order
-  ValidationResult valid_traversal_order = is_in_traversal_order(order);
-  if (!valid_traversal_order.valid)
+  ValidationResult valid_traversal_order_result = is_in_traversal_order(order);
+  if (!valid_traversal_order_result.valid)
   {
-    VDA5050_ERROR("Graph Validation Error: Nodes and edges are not in traversal order.");
+    VDA5050_ERROR("Graph Validation Error: Nodes and edges are not organized according to their sequenceIds.");
 
-    res.valid = false;
-    res.errors.push_back(valid_traversal_order.errors.at(0));
-    return res;
+    return valid_traversal_order_result;
   }
 
-  ValidationResult valid_edges = is_valid_edges(order);
-  if (!valid_edges.valid)
+  ValidationResult valid_edges_result = is_valid_edges(order);
+  if (!valid_edges_result.valid)
   {
-    VDA5050_ERROR("Graph Validation Error: start_node_id and end_node_id of an edge does not match the node_ids of the Order's first node and last node.");
+    VDA5050_ERROR("Graph Validation Error: start_node_id and end_node_id of an edge do not match the node_ids of the Order's first node and last node.");
 
-    res.valid = false;
-    res.errors.push_back(valid_edges.errors.at(0));
-    return res;
+    return valid_edges_result;
   }
 
   return res;
@@ -83,87 +80,55 @@ ValidationResult OrderGraphValidator::is_valid_graph(const vda5050_types::Order&
 
 ValidationResult OrderGraphValidator::is_in_traversal_order(const vda5050_types::Order& order)
 {
-  /// lambda functions to get sequenceIds and compare variants using sequenceIds
-  auto getSequenceId
-  {
-    [](auto&& graph_element)
-    {
-      return graph_element.sequence_id;
-    }
-  };
-
-  auto sequenceIdComparison
-  {
-    [&getSequenceId](auto const& a, auto const& b)
-    {
-      return std::visit(getSequenceId, a) < std::visit(getSequenceId, b);
-    }
-  };
-
-  auto getNodeOrEdgeId
-  {
-    [](auto&& graph_element)
-    {
-      using T = std::decay_t<decltype(graph_element)>;
-      if constexpr (std::is_same_v<T, vda5050_types::Node>)
-      {
-        return graph_element.node_id;
-      }
-      else if constexpr (std::is_same_v<T, vda5050_types::Edge>)
-      {
-      return graph_element.edge_id;
-      }
-    }
-  };
-
   ValidationResult res {true, {}};
 
-  /// store all nodes and edges in a vector
-  std::vector<std::variant<vda5050_types::Node, vda5050_types::Edge>> graph;
-  for (vda5050_types::Node n : order.nodes)
+  /// establish two indices to track the current edge and node that we are comparing
+  size_t node_idx = 0;
+  size_t edge_idx = 0;
+  
+  while (node_idx < order.nodes.size() && edge_idx < order.edges.size())
   {
-    graph.push_back(n);
-  }
-
-  for (vda5050_types::Edge e : order.edges)
-  {
-    graph.push_back(e);
-  }
-
-  /// sort nodes and edges according to their sequenceIds
-  std::sort(graph.begin(), graph.end(), sequenceIdComparison);
-
-  /// check each sequenceId and ensure they are in running order
-  int current_sequence_id = std::visit(getSequenceId, graph.front());
-  for (int i = 1; i < graph.size(); i++)
-  {
-    if (current_sequence_id + 1 != std::visit(getSequenceId, graph.at(i)))
+    vda5050_types::Edge current_edge = order.edges.at(edge_idx);
+    vda5050_types::Node current_node = order.nodes.at(node_idx);
+ 
+    if (node_idx == edge_idx)
     {
-      vda5050_types::Error not_in_traversal_order_error {};
-      not_in_traversal_order_error.error_type = "Graph Validation Error";
-      not_in_traversal_order_error.error_description = "Nodes and Edges of the given order are not in order of sequenceId";
-
-      vda5050_types::ErrorReference prev_element_err_ref {};
-      vda5050_types::ErrorReference current_element_err_ref {};
-
-      if (std::holds_alternative<vda5050_types::Node>(graph.at(i - 1)))
+      if (current_edge.sequence_id == current_node.sequence_id + 1)
       {
-        prev_element_err_ref.reference_key = "nodeId";
-        current_element_err_ref.reference_key = "edgeId";
+        node_idx++;
       }
       else
       {
-        prev_element_err_ref.reference_key = "edgeId";
-        current_element_err_ref.reference_key = "nodeId";
+        vda5050_types::Error error {};
+        error.error_type = "Graph Validation Error";
+        error.error_description = fmt::format("EdgeId {} expected to have sequence_id equal to {}, but is actually {}", current_edge.edge_id, current_node.sequence_id + 1, current_edge.sequence_id);
+        error.error_level = vda5050_types::ErrorLevel::FATAL;
+        error.error_references = {vda5050_types::ErrorReference {"edgeId", current_edge.edge_id}};
+
+        res.valid = false;
+        res.errors.push_back(error);
+        return res;
       }
-      prev_element_err_ref.reference_value = std::visit(getNodeOrEdgeId, graph.at(i - 1));
-      current_element_err_ref.reference_key = std::visit(getNodeOrEdgeId, graph.at(i));
+    }
+    /// if node_idx > edge_idx (node_idx will never be less than edge_idx)
+    else
+    {
+      if (current_edge.sequence_id + 1 == current_node.sequence_id)
+      {
+        edge_idx++;
+      }
+      else
+      {
+        vda5050_types::Error error {};
+        error.error_type = "Graph Validation Error";
+        error.error_description = fmt::format("NodeId {} expected to have sequence_id equal to {}, but is actually {}", current_node.node_id, current_edge.sequence_id + 1, current_node.sequence_id);
+        error.error_level = vda5050_types::ErrorLevel::FATAL;
+        error.error_references = {vda5050_types::ErrorReference {"nodeId", current_node.node_id}};
 
-      not_in_traversal_order_error.error_references = {prev_element_err_ref, current_element_err_ref};
-
-      res.valid = false;
-      res.errors = {not_in_traversal_order_error};
-      return res;
+        res.valid = false;
+        res.errors.push_back(error);
+        return res;
+      }
     }
   }
 
