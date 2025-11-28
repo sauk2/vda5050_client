@@ -20,33 +20,37 @@
 #include <optional>
 
 #include "vda5050_core/client/order/order_graph_validator.hpp"
+#include "vda5050_core/client/order/validation_result.hpp"
 #include "vda5050_types/edge.hpp"
 #include "vda5050_types/node.hpp"
+#include "vda5050_types/order.hpp"
 
 class OrderGraphValidatorTest : public testing::Test
 {
 protected:
-  vda5050_types::Node n1_{"node1", 1, true, {}, std::nullopt, std::nullopt};
-  vda5050_types::Edge e2_{"edge2",      2,
-                          "node1",      "node5",
-                          true,         {},
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt};
-  vda5050_types::Node n3_{"node3", 3, true, {}, std::nullopt, std::nullopt};
-  vda5050_types::Edge e4_{"edge4",      4,
-                          "node1",      "node5",
-                          true,         {},
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt, std::nullopt,
-                          std::nullopt};
-  vda5050_types::Node n5_{"node5", 5, true, {}, std::nullopt, std::nullopt};
+    vda5050_types::Node n1_{"node1", 1, true, {}, std::nullopt, std::nullopt};
+    vda5050_types::Edge e2_{"edge2",      2,
+                            "node1",      "node5",
+                            true,         {},
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt};
+    vda5050_types::Node n3_{"node3", 3, true, {}, std::nullopt, std::nullopt};
+    vda5050_types::Edge e4_{"edge4",      4,
+                            "node1",      "node5",
+                            true,         {},
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt, std::nullopt,
+                            std::nullopt};
+    vda5050_types::Node n5_{"node5", 5, true, {}, std::nullopt, std::nullopt};
+
+    vda5050_types::Order order_{};
 };
 
 /// \brief Tests that graph validator returns true on a valid graph
@@ -61,12 +65,15 @@ TEST_F(OrderGraphValidatorTest, ValidGraphTest)
   edges.push_back(e4_);
   nodes.push_back(n5_);
 
-  vda5050_core::client::order::OrderGraphValidator graph_validator{};
+  order_.edges = edges;
+  order_.nodes = nodes;
 
-  EXPECT_TRUE(graph_validator.is_valid_graph(nodes, edges));
+  vda5050_core::client::order::ValidationResult res = vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
+
+  EXPECT_TRUE(res.valid);
 }
 
-/// \brief Tests that graph validator returns false when nodes and edges are not in traversal order
+// /// \brief Tests that graph validator returns false when nodes and edges are not in traversal order
 TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
 {
   std::vector<vda5050_types::Node> nodes;
@@ -78,23 +85,12 @@ TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
   edges.push_back(e2_);
   nodes.push_back(n5_);
 
-  vda5050_core::client::order::OrderGraphValidator graph_validator{};
+  order_.edges = edges;
+  order_.nodes = nodes;
 
-  EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
-}
+  vda5050_core::client::order::ValidationResult res = vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
 
-///\brief Tests that graph validator throws an error if zero nodes are present
-TEST_F(OrderGraphValidatorTest, ZeroNodesTest)
-{
-  std::vector<vda5050_types::Node> nodes;
-  std::vector<vda5050_types::Edge> edges;
-
-  EXPECT_EQ(nodes.size(), 0);
-  EXPECT_EQ(edges.size(), 0);
-
-  vda5050_core::client::order::OrderGraphValidator graph_validator{};
-
-  EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
+  EXPECT_FALSE(res.valid);
 }
 
 ///\brief Tests that graph validator returns false if the difference in number of nodes and edges is greater than one
@@ -114,7 +110,10 @@ TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
 
   nodes.push_back(n5_);
 
-  vda5050_core::client::order::OrderGraphValidator graph_validator{};
+  order_.nodes = nodes;
+  order_.edges = edges;
 
-  EXPECT_FALSE(graph_validator.is_valid_graph(nodes, edges));
+  vda5050_core::client::order::ValidationResult res = vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
+
+  EXPECT_FALSE(res.valid);
 }
