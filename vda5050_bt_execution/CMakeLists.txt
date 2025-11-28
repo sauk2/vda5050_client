@@ -28,13 +28,6 @@ target_include_directories(vda5050_bt_execution
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_executable(main src/main.cpp)
-
-target_link_libraries(main
-  PUBLIC
-    vda5050_bt_execution
-)
-
 install(
   DIRECTORY include/vda5050_bt_execution
   DESTINATION include
@@ -53,12 +46,6 @@ install(
   EXPORT export_vda5050_bt_execution
   DESTINATION share/${PROJECT_NAME}/cmake
   NAMESPACE vda5050_bt_execution::
-)
-
-install(
-  TARGETS main
-  EXPORT main
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_targets(export_vda5050_bt_execution HAS_LIBRARY_TARGET)
