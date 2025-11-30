@@ -28,23 +28,28 @@ namespace vda5050_core {
 namespace client {
 namespace order {
 
-/// \brief Utility class with functions to perform validity checks on the graph contained in a VDA5050 Order message
+/// \brief Utility class with functions to perform validity checks on the graph
+/// contained in a VDA5050 Order message
 class OrderGraphValidator
 {
 public:
-  /// \brief Checks that the nodes and edges in a VDA5050 Order form a valid graph according to the VDA5050 specification sheet.
+  /// \brief Checks that the nodes and edges in a VDA5050 Order form a valid
+  /// graph according to the VDA5050 specification sheet.
   ///
   /// \return True if nodes and edges create a valid graph, false otherwise
   static ValidationResult is_valid_graph(const vda5050_types::Order& order);
 
 private:
-  /// \brief Checks that the nodes and edges contained in a VDA5050 Order are arranged according to their sequenceId
+  /// \brief Checks that the nodes and edges contained in a VDA5050 Order are
+  /// arranged according to their sequenceId
   ///
-  /// \return True if nodes and edges are arranged according to their sequenceId, false otherwise
+  /// \return True if nodes and edges are arranged according to their
+  /// sequenceId, false otherwise
   static ValidationResult is_in_traversal_order(
     const vda5050_types::Order& order);
 
-  /// \brief Checks that startNodeId and endNodeId of all edges in a VDA5050 Order match with its the start and end nodeIds
+  /// \brief Checks that startNodeId and endNodeId of all edges in a VDA5050
+  /// Order match with its the start and end nodeIds
   ///
   /// \return True if all edges' startNodeId and endNodId match, false otherwise
   static ValidationResult is_valid_edges(const vda5050_types::Order& order);
@@ -53,4 +58,5 @@ private:
 }  // namespace order
 }  // namespace client
 }  // namespace vda5050_core
+
 #endif  // VDA5050_CORE__CLIENT__ORDER__ORDER_GRAPH_VALIDATOR_HPP_

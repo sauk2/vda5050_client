@@ -33,7 +33,8 @@ struct ValidationResult
   /// \brief True if an order is valid, false otherwise
   bool valid;
 
-  /// \brief A vector of error(s) that resulted in an invalid order. Empty if order is valid.
+  /// \brief A vector of error(s) that resulted in an invalid order. Empty if
+  /// order is valid.
   std::vector<vda5050_types::Error> errors;
 
   /// \brief Equality operator
