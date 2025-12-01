@@ -36,28 +36,6 @@ struct ValidationResult
   /// \brief A vector of error(s) that resulted in an invalid order. Empty if
   /// order is valid.
   std::vector<vda5050_types::Error> errors;
-
-  /// \brief Equality operator
-  ///
-  /// \param other The other object to compare to
-  ///
-  /// \return is equal?
-  inline bool operator==(const ValidationResult& other) const
-  {
-    if (this->valid != other.valid) return false;
-    if (this->errors != other.errors) return false;
-    return true;
-  }
-
-  /// \brief Inequality operator
-  ///
-  /// \param other The other object to compare to
-  ///
-  /// \return is not equal?
-  inline bool operator!=(const ValidationResult& other) const
-  {
-    return !(this->operator==(other));
-  }
 };
 
 }  // namespace order
