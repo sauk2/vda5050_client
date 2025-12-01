@@ -54,7 +54,7 @@ ValidationResult OrderGraphValidator::is_valid_graph(
         vda5050_types::ErrorReference{
           "orderUpdateId", std::to_string(order.order_update_id)}},
       "Difference in number of nodes and edges in the given order is not 1.",
-      vda5050_types::ErrorLevel::FATAL};
+      vda5050_types::ErrorLevel::WARNING};
 
     res.valid = false;
     res.errors.push_back(graph_validation_error);
@@ -122,7 +122,7 @@ ValidationResult OrderGraphValidator::is_in_traversal_order(
           "{}",
           current_edge.edge_id, current_node.sequence_id + 1,
           current_edge.sequence_id);
-        error.error_level = vda5050_types::ErrorLevel::FATAL;
+        error.error_level = vda5050_types::ErrorLevel::WARNING;
         error.error_references = {
           vda5050_types::ErrorReference{"edgeId", current_edge.edge_id}};
 
@@ -146,7 +146,7 @@ ValidationResult OrderGraphValidator::is_in_traversal_order(
           "{}",
           current_node.node_id, current_edge.sequence_id + 1,
           current_node.sequence_id);
-        error.error_level = vda5050_types::ErrorLevel::FATAL;
+        error.error_level = vda5050_types::ErrorLevel::WARNING;
         error.error_references = {
           vda5050_types::ErrorReference{"nodeId", current_node.node_id}};
 
@@ -179,7 +179,7 @@ ValidationResult OrderGraphValidator::is_valid_edges(
       invalid_edges_error.error_description =
         "start_node_id and end_node_id of the edge does not match the node_ids "
         "of the order's first and last node respectively.";
-      invalid_edges_error.error_level = vda5050_types::ErrorLevel::FATAL;
+      invalid_edges_error.error_level = vda5050_types::ErrorLevel::WARNING;
 
       res.valid = false;
       res.errors = {invalid_edges_error};
