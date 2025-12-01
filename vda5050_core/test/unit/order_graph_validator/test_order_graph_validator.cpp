@@ -72,6 +72,7 @@ TEST_F(OrderGraphValidatorTest, ValidGraphTest)
     vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
 
   EXPECT_TRUE(res.valid);
+  EXPECT_TRUE(res.errors.empty());
 }
 
 // /// \brief Tests that graph validator returns false when nodes and edges are
@@ -94,6 +95,11 @@ TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
     vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
 
   EXPECT_FALSE(res.valid);
+
+  /// e4_ should be the cause of the error
+  std::string expected_error_reference_value =
+    res.errors.at(0).error_references.value().at(0).reference_value;
+  EXPECT_EQ(e4_.edge_id, expected_error_reference_value);
 }
 
 /// \brief Tests that graph validator returns false if the difference in number
@@ -114,6 +120,7 @@ TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
 
   nodes.push_back(n5_);
 
+  order_.order_id = "order1";
   order_.nodes = nodes;
   order_.edges = edges;
 
@@ -121,4 +128,8 @@ TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
     vda5050_core::client::order::OrderGraphValidator::is_valid_graph(order_);
 
   EXPECT_FALSE(res.valid);
+
+  std::string expected_error_reference_value =
+    res.errors.at(0).error_references.value().at(0).reference_value;
+  EXPECT_EQ(order_.order_id, expected_error_reference_value);
 }
