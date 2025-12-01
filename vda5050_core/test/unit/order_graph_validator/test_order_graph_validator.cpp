@@ -96,8 +96,8 @@ TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
   EXPECT_FALSE(res.valid);
 }
 
-///\brief Tests that graph validator returns false if the difference in number
-///of nodes and edges is greater than one
+/// \brief Tests that graph validator returns false if the difference in number
+/// of nodes and edges is greater than one
 TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
 {
   std::vector<vda5050_types::Node> nodes;

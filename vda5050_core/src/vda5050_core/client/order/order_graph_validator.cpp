@@ -131,7 +131,6 @@ ValidationResult OrderGraphValidator::is_in_traversal_order(
         return res;
       }
     }
-    /// if node_idx > edge_idx (node_idx will never be less than edge_idx)
     else
     {
       if (current_edge.sequence_id + 1 == current_node.sequence_id)
