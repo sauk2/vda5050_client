@@ -17,25 +17,44 @@
  */
 
 #include "vda5050_bt_execution/bt_nodes/update_order.hpp"
+#include "vda5050_bt_execution/bt_execution/execution_context.hpp"
 
 namespace vda5050_bt_execution {
 
 //============================================================================
 UpdateOrder::UpdateOrder(const std::string& name, const BT::NodeConfig& config)
-: BT::StatefulActionNode(name, config)
+: BT::SyncActionNode(name, config)
 {
+  // Nothing to do here ...
 }
 
 //============================================================================
-BT::PortsList UpdateOrder::providedPorts() {}
+BT::PortsList UpdateOrder::providedPorts()
+{
+  return {BT::InputPort<std::shared_ptr<ExecutionContext>>("context")};
+}
 
 //============================================================================
-BT::NodeStatus UpdateOrder::onStart() {}
+BT::NodeStatus UpdateOrder::tick()
+{
+  auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
 
-//============================================================================
-BT::NodeStatus UpdateOrder::onRunning() {}
+  if (context)
+  {
+    std::optional<std::shared_ptr<vda5050_types::Order>> incoming_order;
+    {
+      std::lock_guard<std::mutex> lock(context->order_mutex);
+      if (!context->incoming_order_queue.empty())
+      {
+        incoming_order = context->incoming_order_queue.front();
+        context->incoming_order_queue.pop();
+      }
+    }
 
-//============================================================================
-void UpdateOrder::onHalted() {}
+    if (!incoming_order.has_value()) return BT::NodeStatus::SUCCESS;
+  }
+
+  return BT::NodeStatus::SUCCESS;
+}
 
 }  // namespace vda5050_bt_execution

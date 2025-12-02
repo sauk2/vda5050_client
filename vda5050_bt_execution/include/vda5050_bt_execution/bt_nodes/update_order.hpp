@@ -25,18 +25,14 @@
 
 namespace vda5050_bt_execution {
 
-class UpdateOrder : public BT::StatefulActionNode
+class UpdateOrder : public BT::SyncActionNode
 {
 public:
   UpdateOrder(const std::string& name, const BT::NodeConfig& config);
 
   static BT::PortsList providedPorts();
 
-  BT::NodeStatus onStart() override;
-
-  BT::NodeStatus onRunning() override;
-
-  void onHalted() override;
+  BT::NodeStatus tick() override;
 };
 
 }  // namespace vda5050_bt_execution

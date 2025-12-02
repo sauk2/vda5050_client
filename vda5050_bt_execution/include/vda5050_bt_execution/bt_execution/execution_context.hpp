@@ -21,8 +21,11 @@
 
 #include <memory>
 #include <mutex>
+#include <queue>
 
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
+#include <vda5050_json_utils/serialization.hpp>
+#include <vda5050_types/order.hpp>
 
 #include "vda5050_bt_execution/bt_utils/state_publisher.hpp"
 
@@ -34,6 +37,9 @@ struct ExecutionContext
 
   std::mutex state_mutex;
   std::shared_ptr<vda5050_bt_execution::StatePublisher> state_publisher;
+
+  std::mutex order_mutex;
+  std::queue<std::shared_ptr<vda5050_types::Order>> incoming_order_queue;
 };
 
 }  // namespace vda5050_bt_execution

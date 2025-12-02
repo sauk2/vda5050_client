@@ -57,16 +57,20 @@ void ExecutionEngine::initialize()
   factory.registerNodeType<MonitorConnection>("MonitorConnection");
   factory.registerNodeType<UpdateState>("UpdateState");
 
+  // TODO(sauk): Try to put MonitorConnection in a ReactiveSequence with all
+  // other nodes inside a Parallel
+  // clang-format off
   const char* xml_text = R"(
-<root BTCPP_format="4">
-  <BehaviorTree ID="MainTree">
-    <Parallel>
-      <MonitorConnection context="{context}"/>
-      <UpdateState context="{context}"/>
-    </Parallel>
-  </BehaviorTree>
-</root>
-)";
+  <root BTCPP_format="4">
+    <BehaviorTree ID="MainTree">
+      <Parallel>
+        <MonitorConnection context="{context}"/>
+        <UpdateState context="{context}"/>
+      </Parallel>
+    </BehaviorTree>
+  </root>
+  )";
+  // clang-format on
 
   tree_ = factory.createTreeFromText(xml_text);
   tree_.rootBlackboard()->set("context", context_);
