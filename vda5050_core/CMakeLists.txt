@@ -34,7 +34,10 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(client src/vda5050_core/client/order/order_graph_validator.cpp)
+add_library(client 
+  src/vda5050_core/client/order/order_graph_validator.cpp
+  src/vda5050_core/client/order/graph_element.cpp
+)
 target_link_libraries(client
   PRIVATE
     vda5050_types::vda5050_types
