@@ -36,12 +36,18 @@ public:
   /// \brief Checks that the nodes and edges in a VDA5050 Order form a valid
   /// graph according to the VDA5050 specification sheet.
   ///
+  /// \param order The order to be checked.
+  /// \return ValidationResult containing if the order being checked is valid, and any errors if it is not.
+  ///
   /// \return True if nodes and edges create a valid graph, false otherwise
   static ValidationResult is_valid_graph(const vda5050_types::Order& order);
 
 private:
   /// \brief Checks that the nodes and edges contained in a VDA5050 Order are
   /// arranged according to their sequenceId
+  ///
+  /// \param order The order to be checked.
+  /// \return ValidationResult containing if the order being checked is valid, and any errors if it is not.
   ///
   /// \return True if nodes and edges are arranged according to their
   /// sequenceId, false otherwise
@@ -51,8 +57,18 @@ private:
   /// \brief Checks that startNodeId and endNodeId of all edges in a VDA5050
   /// Order match with its the start and end nodeIds
   ///
+  /// \param order The order to be checked.
+  /// \return ValidationResult containing if the order being checked is valid, and any errors if it is not.
+  ///
   /// \return True if all edges' startNodeId and endNodId match, false otherwise
   static ValidationResult is_valid_edges(const vda5050_types::Order& order);
+
+  /// \brief Checks that all node sequenceIds are always even, and that all edge sequenceIds are always odd.
+  ///
+  /// \param order The order to be checked.
+  ///
+  /// \return ValidationResult containing if the order being checked is valid, and any errors if it is not.
+  static ValidationResult is_valid_sequence_ids(const vda5050_types::Order& order);
 };
 
 }  // namespace order

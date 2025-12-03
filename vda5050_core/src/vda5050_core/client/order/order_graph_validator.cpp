@@ -118,7 +118,7 @@ ValidationResult OrderGraphValidator::is_in_traversal_order(
         vda5050_types::Error error{};
         error.error_type = "Graph Validation Error";
         error.error_description = fmt::format(
-          "EdgeId {} expected to have sequence_id equal to {}, but is actually "
+          "Edge with edgeId \"{}\" expected to have sequence_id equal to {}, but is actually "
           "{}",
           current_edge.edge_id, current_node.sequence_id + 1,
           current_edge.sequence_id);
