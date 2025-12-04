@@ -21,13 +21,19 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 
+#include <memory>
 #include <string>
+
+#include <vda5050_types/header.hpp>
 
 namespace vda5050_bt_execution {
 
 class UpdateState : public BT::StatefulActionNode
 {
 public:
+  using Clock = std::chrono::steady_clock;
+  using TimePoint = std::chrono::steady_clock::time_point;
+
   UpdateState(const std::string& name, const BT::NodeConfig& config);
 
   static BT::PortsList providedPorts();
@@ -37,6 +43,12 @@ public:
   BT::NodeStatus onRunning() override;
 
   void onHalted() override;
+
+private:
+  std::atomic_bool pending_event_publish_;
+  TimePoint last_publish_time_;
+  std::string topic_;
+  std::shared_ptr<vda5050_types::Header> current_header_;
 };
 
 }  // namespace vda5050_bt_execution

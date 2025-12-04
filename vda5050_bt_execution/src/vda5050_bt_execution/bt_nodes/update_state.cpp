@@ -40,6 +40,24 @@ BT::PortsList UpdateState::providedPorts()
 //=============================================================================
 BT::NodeStatus UpdateState::onStart()
 {
+  auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
+  if (context)
+  {
+    topic_ = fmt::format(
+      "{}/{}/{}/{}/state", context->client_config->interface,
+      context->client_config->version, context->client_config->manufacturer,
+      context->client_config->serial_number);
+
+    vda5050_types::Header header;
+    header.timestamp = std::chrono::system_clock::now();
+    header.version = context->client_config->version;
+    header.manufacturer = context->client_config->manufacturer;
+    header.serial_number = context->client_config->serial_number;
+    current_header_ = std::make_shared<vda5050_types::Header>(header);
+
+    context->request_state_publish = true;
+    last_publish_time_ = Clock::now();
+  }
   return BT::NodeStatus::RUNNING;
 }
 
@@ -47,7 +65,34 @@ BT::NodeStatus UpdateState::onStart()
 BT::NodeStatus UpdateState::onRunning()
 {
   auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
-  if (context) context->state_publisher->tick();
+
+  if (context)
+  {
+    auto now = Clock::now();
+
+    if (
+      context->request_state_publish ||
+      (now - last_publish_time_ >=
+       context->client_config->state_publish_period))
+    {
+      if (context->mqtt_client && context->mqtt_client->connected())
+      {
+        current_header_->header_id++;
+        current_header_->timestamp = std::chrono::system_clock::now();
+
+        vda5050_types::State state;
+        state.header = *current_header_;
+        nlohmann::json j = state;
+        context->mqtt_client->publish(topic_, j.dump(), 0);
+        VDA5050_INFO("Published state");
+
+        last_publish_time_ = now;
+        if (context->request_state_publish)
+          context->request_state_publish = false;
+      }
+    }
+  }
+
   return BT::NodeStatus::RUNNING;
 }
 
