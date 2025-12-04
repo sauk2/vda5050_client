@@ -25,6 +25,7 @@
 #include <chrono>
 #include <memory>
 
+#include "vda5050_bt_execution/bt_execution/client_config.hpp"
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
 
 namespace vda5050_bt_execution {
@@ -32,9 +33,10 @@ namespace vda5050_bt_execution {
 class ExecutionEngine : public std::enable_shared_from_this<ExecutionEngine>
 {
 public:
-  static std::shared_ptr<ExecutionEngine> make();
+  static std::shared_ptr<ExecutionEngine> make(const ClientConfig& config);
 
-  static std::shared_ptr<ExecutionEngine> make_and_init();
+  static std::shared_ptr<ExecutionEngine> make_and_init(
+    const ClientConfig& config);
 
   void initialize();
 
@@ -47,7 +49,7 @@ public:
   void shutdown();
 
 private:
-  ExecutionEngine();
+  ExecutionEngine(const ClientConfig& config);
 
   BT::Tree tree_;
   std::shared_ptr<ExecutionContext> context_;
