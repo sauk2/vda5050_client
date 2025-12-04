@@ -117,7 +117,6 @@ if(BUILD_TESTING)
   )
   target_link_libraries(test_mqtt_client mqtt_client logger)
 
-  find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(order_graph_validator_test
     test/unit/order_graph_validator/test_order_graph_validator.cpp
   )
