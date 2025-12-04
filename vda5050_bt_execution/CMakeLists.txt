@@ -10,6 +10,13 @@ find_package(behaviortree_cpp REQUIRED)
 find_package(vda5050_core REQUIRED)
 find_package(vda5050_types REQUIRED)
 find_package(vda5050_json_utils REQUIRED)
+find_package(fmt REQUIRED)
+
+# to be removed later
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+# to be removed later
 
 include(GNUInstallDirs)
 
@@ -21,11 +28,22 @@ target_link_libraries(vda5050_bt_execution
     vda5050_types::vda5050_types
     vda5050_json_utils::vda5050_json_utils
     behaviortree_cpp::behaviortree_cpp
+    fmt::fmt
+    # to be removed later
+    ${rclcpp_LIBRARIES}
+    ${geometry_msgs_LIBRARIES}
+    ${tf2_geometry_msgs_LIBRARIES}
+    # to be removed later
 )
 target_include_directories(vda5050_bt_execution
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    # to be removed later
+    ${rclcpp_INCLUDE_DIRS}
+    ${geometry_msgs_INCLUDE_DIRS}
+    ${tf2_geometry_msgs_INCLUDE_DIRS}
+    # to be removed later
 )
 
 install(
@@ -53,6 +71,12 @@ ament_export_dependencies(vda5050_core
   vda5050_types
   vda5050_json_utils
   behaviortree_cpp
+  fmt
+  # to be removed later
+  rclcpp
+  geometry_msgs
+  tf2_geometry_msgs
+  # to be removed later
 )
 
 if(BUILD_TESTING)
