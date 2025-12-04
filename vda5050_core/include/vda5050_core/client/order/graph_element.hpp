@@ -33,11 +33,11 @@ struct GraphElement
 {
   /// \brief Constructor if GraphElement takes attributes from a
   /// vda5050types::Node \param node vda5050_types::Node
-  GraphElement(const vda5050_types::Node& node);
+  explicit GraphElement(const vda5050_types::Node& node);
 
   /// \brief Constructor if GraphElement takes attributes from a
   /// vda5050types::Edge \param edge vda5050_types::Edge
-  GraphElement(const vda5050_types::Edge& edge);
+  explicit GraphElement(const vda5050_types::Edge& edge);
 
   std::string element_id;
 

@@ -34,7 +34,7 @@ namespace order {
 class OrderGraphValidator
 {
 public:
-  OrderGraphValidator(const vda5050_types::Order& order);
+  explicit OrderGraphValidator(const vda5050_types::Order& order);
 
   /// \brief Checks that the nodes and edges in a VDA5050 Order form a valid
   /// graph according to the VDA5050 specification sheet.
