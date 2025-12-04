@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
-#include "vda5050_bt_execution/bt_nodes/monitor_connection.hpp"
+#include <chrono>
+
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
+#include "vda5050_bt_execution/bt_nodes/monitor_connection.hpp"
 
 #include <vda5050_core/logger/logger.hpp>
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
@@ -45,6 +47,33 @@ BT::PortsList MonitorConnection::providedPorts()
 //=============================================================================
 BT::NodeStatus MonitorConnection::onStart()
 {
+  auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
+
+  if (context)
+  {
+    topic_ = fmt::format(
+      "{}/{}/{}/{}/connection", context->client_config->interface,
+      context->client_config->version, context->client_config->manufacturer,
+      context->client_config->serial_number);
+
+    vda5050_types::Header header;
+    header.timestamp = std::chrono::system_clock::now();
+    header.version = context->client_config->version;
+    header.manufacturer = context->client_config->manufacturer;
+    header.serial_number = context->client_config->serial_number;
+    current_header_ = std::make_shared<vda5050_types::Header>(header);
+
+    if (context->mqtt_client)
+    {
+      vda5050_types::Connection connection_will;
+      connection_will.header = *current_header_;
+      connection_will.connection_state =
+        vda5050_types::ConnectionState::CONNECTIONBROKEN;
+      nlohmann::json j = connection_will;
+      context->mqtt_client->set_will(topic_, j.dump(), 1);
+    }
+  }
+
   return BT::NodeStatus::RUNNING;
 }
 
@@ -62,11 +91,15 @@ BT::NodeStatus MonitorConnection::onRunning()
 
     if (!last_connected_)
     {
+      current_header_->header_id++;
+      current_header_->timestamp = std::chrono::system_clock::now();
+
       vda5050_types::Connection connection;
+      connection.header = *current_header_;
       connection.connection_state = vda5050_types::ConnectionState::ONLINE;
       nlohmann::json j = connection;
 
-      context->mqtt_client->publish("vda5050/connection", j.dump(), 1);
+      context->mqtt_client->publish(topic_, j.dump(), 1, true);
       last_connected_ = true;
     }
   }
@@ -80,11 +113,15 @@ void MonitorConnection::onHalted()
 
   if (context && context->mqtt_client)
   {
+    current_header_->header_id++;
+    current_header_->timestamp = std::chrono::system_clock::now();
+
     vda5050_types::Connection connection;
+    connection.header = *current_header_;
     connection.connection_state = vda5050_types::ConnectionState::OFFLINE;
     nlohmann::json j = connection;
 
-    context->mqtt_client->publish("vda5050/connection", j.dump(), 1);
+    context->mqtt_client->publish(topic_, j.dump(), 1, true);
   }
 }
 

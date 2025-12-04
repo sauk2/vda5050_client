@@ -21,7 +21,10 @@
 
 #include <behaviortree_cpp/bt_factory.h>
 
+#include <memory>
 #include <string>
+
+#include <vda5050_types/header.hpp>
 
 namespace vda5050_bt_execution {
 
@@ -40,6 +43,8 @@ public:
 
 private:
   std::atomic_bool last_connected_;
+  std::string topic_;
+  std::shared_ptr<vda5050_types::Header> current_header_;
 };
 
 }  // namespace vda5050_bt_execution
