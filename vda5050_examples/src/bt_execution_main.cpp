@@ -18,12 +18,23 @@
 
 #include <vda5050_core/logger/logger.hpp>
 
+#include <vda5050_bt_execution/bt_execution/client_config.hpp>
 #include <vda5050_bt_execution/bt_execution/execution_engine.hpp>
 
-int main()
+int main(int argc, char** argv)
 {
+  vda5050_bt_execution::ClientConfig config{
+    "uagv",
+    "v2",
+    "ROS-I",
+    "S001",
+    "tcp://localhost:1883",
+    std::chrono::seconds(10)};
+
+  rclcpp::init(argc, argv);
+
   auto execution_engine =
-    vda5050_bt_execution::ExecutionEngine::make_and_init();
+    vda5050_bt_execution::ExecutionEngine::make_and_init(config);
   VDA5050_INFO("Starting VDA5050 Client...");
 
   for (int i = 0; i < 25; i++)
