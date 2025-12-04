@@ -19,6 +19,7 @@
 #ifndef VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_CONTEXT_HPP_
 #define VDA5050_BT_EXECUTION__BT_EXECUTION__EXECUTION_CONTEXT_HPP_
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -27,7 +28,8 @@
 #include <vda5050_json_utils/serialization.hpp>
 #include <vda5050_types/order.hpp>
 
-#include "vda5050_bt_execution/bt_utils/state_publisher.hpp"
+#include "vda5050_bt_execution/bt_execution/client_config.hpp"
+#include "vda5050_bt_execution/bt_utils/robot_adapter.hpp"
 
 namespace vda5050_bt_execution {
 
@@ -35,11 +37,16 @@ struct ExecutionContext
 {
   std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client;
 
-  std::mutex state_mutex;
-  std::shared_ptr<vda5050_bt_execution::StatePublisher> state_publisher;
+  std::shared_ptr<const ClientConfig> client_config;
 
   std::mutex order_mutex;
   std::queue<std::shared_ptr<vda5050_types::Order>> incoming_order_queue;
+  std::shared_ptr<vda5050_types::Order> current_order;
+  size_t current_node_idx;
+
+  std::shared_ptr<RobotAdapter> robot_adapter;
+
+  std::atomic_bool request_state_publish;
 };
 
 }  // namespace vda5050_bt_execution
