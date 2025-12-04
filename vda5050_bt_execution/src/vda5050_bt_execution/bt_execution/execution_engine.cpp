@@ -16,10 +16,14 @@
  * limitations under the License.
  */
 
+#include <fmt/core.h>
+
 #include "vda5050_bt_execution/bt_execution/execution_engine.hpp"
+#include "vda5050_bt_execution/bt_nodes/execute_order.hpp"
 #include "vda5050_bt_execution/bt_nodes/monitor_connection.hpp"
+#include "vda5050_bt_execution/bt_nodes/update_order.hpp"
 #include "vda5050_bt_execution/bt_nodes/update_state.hpp"
-#include "vda5050_bt_execution/bt_utils/state_publisher.hpp"
+#include "vda5050_bt_execution/bt_utils/robot_adapter.hpp"
 
 #include <vda5050_core/logger/logger.hpp>
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
@@ -31,18 +35,20 @@
 namespace vda5050_bt_execution {
 
 //=============================================================================
-std::shared_ptr<ExecutionEngine> ExecutionEngine::make()
+std::shared_ptr<ExecutionEngine> ExecutionEngine::make(
+  const ClientConfig& config)
 {
   auto execution_engine =
-    std::shared_ptr<ExecutionEngine>(new ExecutionEngine());
+    std::shared_ptr<ExecutionEngine>(new ExecutionEngine(config));
   return execution_engine;
 }
 
 //=============================================================================
-std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init()
+std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init(
+  const ClientConfig& config)
 {
   auto execution_engine =
-    std::shared_ptr<ExecutionEngine>(new ExecutionEngine());
+    std::shared_ptr<ExecutionEngine>(new ExecutionEngine(config));
   execution_engine->initialize();
   return execution_engine;
 }
@@ -51,11 +57,14 @@ std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init()
 void ExecutionEngine::initialize()
 {
   context_->mqtt_client->connect();
+  context_->robot_adapter->start();
 
   BT::BehaviorTreeFactory factory;
 
   factory.registerNodeType<MonitorConnection>("MonitorConnection");
   factory.registerNodeType<UpdateState>("UpdateState");
+  // factory.registerNodeType<UpdateOrder>("UpdateOrder");
+  // factory.registerNodeType<ExecuteOrder>("ExecuteOrder");
 
   // TODO(sauk): Try to put MonitorConnection in a ReactiveSequence with all
   // other nodes inside a Parallel
@@ -105,31 +114,16 @@ void ExecutionEngine::shutdown()
 }
 
 //=============================================================================
-ExecutionEngine::ExecutionEngine()
+ExecutionEngine::ExecutionEngine(const ClientConfig& config)
 : context_(std::make_shared<ExecutionContext>()), running_(false)
 {
   context_->mqtt_client = vda5050_core::mqtt_client::create_default_client(
-    "tcp://localhost:1883", "S001");
+    config.mqtt_broker_address, config.serial_number);
 
-  vda5050_types::Connection connection_will;
-  connection_will.connection_state =
-    vda5050_types::ConnectionState::CONNECTIONBROKEN;
-  nlohmann::json j = connection_will;
-  context_->mqtt_client->set_will("vda5050/connection", j.dump(), 1);
+  context_->robot_adapter = RobotAdapter::make();
 
-  context_->state_publisher = StatePublisher::make(std::chrono::seconds(10));
-  context_->state_publisher->set_publish_callback([ctx = context_]() {
-    std::lock_guard<std::mutex> lock(ctx->state_mutex);
-
-    if (ctx->mqtt_client && ctx->mqtt_client->connected())
-    {
-      vda5050_types::State state;
-      nlohmann::json j = state;
-      ctx->mqtt_client->publish("vda5050/state", j.dump(), 0);
-      VDA5050_INFO("Published state");
-    }
-  });
-  context_->state_publisher->request_event_publish();
+  context_->client_config =
+    std::make_shared<const ClientConfig>(std::move(config));
 }
 
 }  // namespace vda5050_bt_execution
