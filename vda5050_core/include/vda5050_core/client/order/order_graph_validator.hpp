@@ -55,7 +55,7 @@ private:
   void create_graph();
 
   /// \brief Checks that the nodes and edges contained in a VDA5050 Order are
-  /// arranged according to their sequenceId
+  /// arranged in contiguous and ascending sequenceId order
   ///
   /// \param order The order to be checked.
   /// \return ValidationResult containing if the order being checked is valid,

@@ -112,8 +112,7 @@ ValidationResult OrderGraphValidator::is_valid_graph()
     return res;
   }
 
-  /// if there is more than one node and at least one edge, check that their
-  /// sequenceIds are in order
+  /// check that the sequenceIds of the nodes and edges are in contiguous and ascending order
   ValidationResult valid_traversal_order_result = is_in_traversal_order();
   if (!valid_traversal_order_result.valid)
   {

@@ -29,6 +29,8 @@ namespace vda5050_core {
 namespace client {
 namespace order {
 
+/// \brief A representation of an element in a VDA5050 order's graph that can
+/// be constructed from either a Node or Edge object
 struct GraphElement
 {
   /// \brief Constructor if GraphElement takes attributes from a
