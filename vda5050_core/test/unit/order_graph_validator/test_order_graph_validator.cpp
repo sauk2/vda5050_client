@@ -18,13 +18,14 @@
 
 #include <gtest/gtest.h>
 #include <optional>
-#include <vda5050_types/edge.hpp>
-#include <vda5050_types/node.hpp>
-#include <vda5050_types/order.hpp>
+#include <vector>
 
 #include "vda5050_core/client/order/graph_element.hpp"
 #include "vda5050_core/client/order/order_graph_validator.hpp"
 #include "vda5050_core/client/order/validation_result.hpp"
+#include "vda5050_types/edge.hpp"
+#include "vda5050_types/node.hpp"
+#include "vda5050_types/order.hpp"
 
 class OrderGraphValidatorTest : public testing::Test
 {
