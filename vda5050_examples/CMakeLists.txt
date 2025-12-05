@@ -24,6 +24,32 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+add_executable(master_control src/master_control.cpp)
+
+target_link_libraries(master_control
+  PUBLIC
+    vda5050_core::vda5050_core
+    vda5050_types::vda5050_types
+    vda5050_json_utils::vda5050_json_utils
+)
+
+install(
+  TARGETS master_control
+  EXPORT master_control
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_export_dependencies(bt_execution_main
+  vda5050_core
+  vda5050_bt_execution
+  behaviortree_cpp
+  # to be removed later
+  rclcpp
+  geometry_msgs
+  tf2_geometry_msgs
+  # to be removed later
+)
+
 if(BUILD_TESTING)
   find_package(ament_cmake_cppcheck REQUIRED)
   ament_cppcheck()
