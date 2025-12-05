@@ -17,6 +17,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <optional>
 #include <vector>
 
@@ -53,14 +54,13 @@ protected:
   vda5050_types::Node n4_{"node4", 4, true, {}, std::nullopt, std::nullopt};
 
   vda5050_types::Order order_{};
+  std::vector<vda5050_types::Node> nodes;
+  std::vector<vda5050_types::Edge> edges;
 };
 
 /// \brief Tests that graph validator returns true on a valid graph
 TEST_F(OrderGraphValidatorTest, ValidGraphTest)
 {
-  std::vector<vda5050_types::Node> nodes;
-  std::vector<vda5050_types::Edge> edges;
-
   nodes.push_back(n0_);
   edges.push_back(e1_);
   nodes.push_back(n2_);
@@ -83,9 +83,6 @@ TEST_F(OrderGraphValidatorTest, ValidGraphTest)
 // not in traversal order
 TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
 {
-  std::vector<vda5050_types::Node> nodes;
-  std::vector<vda5050_types::Edge> edges;
-
   nodes.push_back(n0_);
   edges.push_back(e3_);
   nodes.push_back(n2_);
@@ -108,23 +105,18 @@ TEST_F(OrderGraphValidatorTest, NotInTraversalOrderTest)
   EXPECT_EQ(e3_.edge_id, expected_error_reference_value);
 }
 
-/// \brief Tests that graph validator returns false if the difference in number
-/// of nodes and edges is greater than one
-TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
+/// \brief Tests that graph validator returns false if there are more nodes
+/// than edges
+TEST_F(OrderGraphValidatorTest, MoreNodesThanEdgesTest)
 {
-  std::vector<vda5050_types::Node> nodes;
-  std::vector<vda5050_types::Edge> edges;
-
   nodes.push_back(n0_);
-  edges.push_back(e3_);
-  nodes.push_back(n2_);
   edges.push_back(e1_);
-
-  vda5050_types::Node n6 =
-    vda5050_types::Node{"node6", 6, true, {}, std::nullopt, std::nullopt};
-  nodes.push_back(n6);
-
+  nodes.push_back(n2_);
+  edges.push_back(e3_);
   nodes.push_back(n4_);
+
+  vda5050_types::Node n6{"node6", 6, true, {}, std::nullopt, std::nullopt};
+  nodes.push_back(n6);
 
   order_.order_id = "order0";
   order_.nodes = nodes;
@@ -141,3 +133,148 @@ TEST_F(OrderGraphValidatorTest, IncorrectNumberOfNodesAndEdgesTest)
     res.errors.at(0).error_references.value().at(0).reference_value;
   EXPECT_EQ(order_.order_id, expected_error_reference_value);
 }
+
+/// \brief Tests that validation fails if there are more edges
+/// than nodes
+TEST_F(OrderGraphValidatorTest, MoreEdgesThanNodesTest)
+{
+  nodes.push_back(n0_);
+  edges.push_back(e1_);
+  nodes.push_back(n2_);
+  edges.push_back(e3_);
+
+  vda5050_types::Edge e5{"edge5",      5,
+                         "node4",      "node6",
+                         true,         {},
+                         std::nullopt, std::nullopt,
+                         std::nullopt, std::nullopt,
+                         std::nullopt, std::nullopt,
+                         std::nullopt, std::nullopt,
+                         std::nullopt, std::nullopt,
+                         std::nullopt};
+  edges.push_back(e5);
+
+  order_.order_id = "order0";
+  order_.nodes = nodes;
+  order_.edges = edges;
+
+  vda5050_core::client::order::OrderGraphValidator order_graph_validator{
+    order_};
+  vda5050_core::client::order::ValidationResult res =
+    order_graph_validator.is_valid_graph();
+
+  EXPECT_FALSE(res.valid);
+
+  std::string expected_error_reference_value =
+    res.errors.at(0).error_references.value().at(0).reference_value;
+  EXPECT_EQ(order_.order_id, expected_error_reference_value);
+}
+
+/// \brief Tests that an edge in the right sequenceId order causes validation
+/// to fail if its startNodeId and endNodeId do not match the nodeIds of
+/// its neighbouring nodes
+TEST_F(OrderGraphValidatorTest, ValidEdgesTest)
+{
+  nodes.push_back(n0_);
+
+  e1_.start_node_id = "foo";
+  e1_.end_node_id = "bar";
+  edges.push_back(e1_);
+
+  nodes.push_back(n2_);
+
+  order_.order_id = "order0";
+  order_.nodes = nodes;
+  order_.edges = edges;
+
+  vda5050_core::client::order::OrderGraphValidator order_graph_validator{
+    order_};
+  vda5050_core::client::order::ValidationResult res =
+    order_graph_validator.is_valid_graph();
+
+  EXPECT_FALSE(res.valid);
+}
+
+/// \brief Tests that an order with odd node sequenceIds and even edge
+/// sequenceIds causes validation to fail
+TEST_F(OrderGraphValidatorTest, NodeWithOddSequenceIdTest)
+{
+  vda5050_types::Node odd_node1{"oddNode1",   1,           true, {},
+                                std::nullopt, std::nullopt};
+  nodes.push_back(odd_node1);
+  vda5050_types::Node odd_node2{"oddNode2",   3,           true, {},
+                                std::nullopt, std::nullopt};
+  nodes.push_back(odd_node2);
+
+  vda5050_types::Edge even_edge{"evenEdge",   2,
+                                "node4",      "node6",
+                                true,         {},
+                                std::nullopt, std::nullopt,
+                                std::nullopt, std::nullopt,
+                                std::nullopt, std::nullopt,
+                                std::nullopt, std::nullopt,
+                                std::nullopt, std::nullopt,
+                                std::nullopt};
+  edges.push_back(even_edge);
+
+  order_.order_id = "order0";
+  order_.nodes = nodes;
+  order_.edges = edges;
+
+  vda5050_core::client::order::OrderGraphValidator order_graph_validator{
+    order_};
+  vda5050_core::client::order::ValidationResult res =
+    order_graph_validator.is_valid_graph();
+
+  EXPECT_FALSE(res.valid);
+}
+
+/// \brief Tests that no two nodes share the same sequenceId
+TEST_F(OrderGraphValidatorTest, DuplicateNodeSequenceIdTest)
+{
+  n2_.sequence_id = 0;
+
+  nodes.push_back(n0_);
+  nodes.push_back(n2_);
+
+  edges.push_back(e1_);
+
+  order_.order_id = "order0";
+  order_.nodes = nodes;
+  order_.edges = edges;
+
+  vda5050_core::client::order::OrderGraphValidator order_graph_validator{
+    order_};
+  vda5050_core::client::order::ValidationResult res =
+    order_graph_validator.is_valid_graph();
+
+  EXPECT_FALSE(res.valid);
+}
+
+/// \brief Tests that there is only one base in the order
+TEST_F(OrderGraphValidatorTest, MultipleBaseTest)
+{
+  /// n0_, e1_, n2_, and n4_ all released. Create a gap by setting e3_ to
+  /// unreleased.
+  e3_.released = false;
+
+  nodes.push_back(n0_);
+  nodes.push_back(n2_);
+  nodes.push_back(n4_);
+
+  edges.push_back(e1_);
+  edges.push_back(e3_);
+
+  order_.order_id = "order0";
+  order_.nodes = nodes;
+  order_.edges = edges;
+
+  vda5050_core::client::order::OrderGraphValidator order_graph_validator{
+    order_};
+  vda5050_core::client::order::ValidationResult res =
+    order_graph_validator.is_valid_graph();
+
+  EXPECT_FALSE(res.valid);
+}
+
+/// \brief Tests that if an order with a base is received, its graph ends with a relased node
