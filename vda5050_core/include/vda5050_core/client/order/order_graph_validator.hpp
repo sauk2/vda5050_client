@@ -21,9 +21,9 @@
 
 #include <vector>
 
+#include <vda5050_types/order.hpp>
 #include "vda5050_core/client/order/graph_element.hpp"
 #include "vda5050_core/client/order/validation_result.hpp"
-#include "vda5050_types/order.hpp"
 
 namespace vda5050_core {
 namespace client {

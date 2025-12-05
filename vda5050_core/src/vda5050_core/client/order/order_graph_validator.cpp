@@ -17,6 +17,7 @@
  */
 
 #include <fmt/core.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -25,13 +26,13 @@
 #include <variant>
 #include <vector>
 
+#include <vda5050_types/edge.hpp>
+#include <vda5050_types/error.hpp>
+#include <vda5050_types/error_level.hpp>
+#include <vda5050_types/node.hpp>
 #include "vda5050_core/client/order/graph_element.hpp"
 #include "vda5050_core/client/order/order_graph_validator.hpp"
 #include "vda5050_core/logger/logger.hpp"
-#include "vda5050_types/edge.hpp"
-#include "vda5050_types/error.hpp"
-#include "vda5050_types/error_level.hpp"
-#include "vda5050_types/node.hpp"
 
 namespace vda5050_core {
 namespace client {
