@@ -41,17 +41,13 @@ BT::NodeStatus UpdateOrder::tick()
 
   if (context)
   {
-    std::optional<std::shared_ptr<vda5050_types::Order>> incoming_order;
+    std::lock_guard<std::mutex> lock(context->order_mutex);
+    if (!context->incoming_order_queue.empty())
     {
-      std::lock_guard<std::mutex> lock(context->order_mutex);
-      if (!context->incoming_order_queue.empty())
-      {
-        incoming_order = context->incoming_order_queue.front();
-        context->incoming_order_queue.pop();
-      }
+      context->current_order = context->incoming_order_queue.front();
+      context->incoming_order_queue.pop();
+      context->current_node_idx = 0;
     }
-
-    if (!incoming_order.has_value()) return BT::NodeStatus::SUCCESS;
   }
 
   return BT::NodeStatus::SUCCESS;

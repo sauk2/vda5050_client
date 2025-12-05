@@ -36,10 +36,28 @@ BT::PortsList ExecuteOrder::providedPorts()
 }
 
 //=============================================================================
-BT::NodeStatus ExecuteOrder::onStart() {}
+BT::NodeStatus ExecuteOrder::onStart()
+{
+  return BT::NodeStatus::RUNNING;
+}
 
 //=============================================================================
-BT::NodeStatus ExecuteOrder::onRunning() {}
+BT::NodeStatus ExecuteOrder::onRunning()
+{
+  auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
+
+  if (!context) return BT::NodeStatus::RUNNING;
+
+  if (
+    context->current_order && !context->robot_adapter->moving() &&
+    context->current_node_idx < context->current_order->nodes.size())
+  {
+    context->robot_adapter->move(
+      context->current_order->nodes[context->current_node_idx]);
+  }
+
+  return BT::NodeStatus::RUNNING;
+}
 
 //=============================================================================
 void ExecuteOrder::onHalted() {}
