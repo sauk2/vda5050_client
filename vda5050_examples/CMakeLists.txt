@@ -39,6 +39,11 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  DIRECTORY launch config worlds
+  DESTINATION share/${PROJECT_NAME}
+)
+
 ament_export_dependencies(bt_execution_main
   vda5050_core
   vda5050_bt_execution
