@@ -21,6 +21,13 @@
 #include <vda5050_bt_execution/bt_execution/client_config.hpp>
 #include <vda5050_bt_execution/bt_execution/execution_engine.hpp>
 
+static bool shutdown = false;
+
+void signal_handler(int /*sig_num*/)
+{
+  shutdown = true;
+}
+
 int main(int argc, char** argv)
 {
   vda5050_bt_execution::ClientConfig config{
@@ -37,7 +44,7 @@ int main(int argc, char** argv)
     vda5050_bt_execution::ExecutionEngine::make_and_init(config);
   VDA5050_INFO("Starting VDA5050 Client...");
 
-  for (int i = 0; i < 25; i++)
+  while (!shutdown)
   {
     execution_engine->spin_once();
     execution_engine->sleep(std::chrono::milliseconds(1000));
