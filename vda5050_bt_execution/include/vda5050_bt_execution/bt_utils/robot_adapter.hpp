@@ -21,8 +21,10 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <thread>
 
+#include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/node.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -51,6 +53,8 @@ public:
 
   bool moving();
 
+  vda5050_types::AGVPosition current_position();
+
   void shutdown();
 
 private:
@@ -60,8 +64,12 @@ private:
 
   rclcpp::Publisher<PoseArray>::SharedPtr cmd_pose_pub_;
   rclcpp::Subscription<Pose>::SharedPtr reached_pose_sub_;
+  rclcpp::Subscription<PoseArray>::SharedPtr current_pose_sub_;
 
   std::thread rcl_spin_thread_;
+
+  std::mutex position_mutex_;
+  vda5050_types::AGVPosition current_position_;
 };
 
 }  // namespace vda5050_bt_execution

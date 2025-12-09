@@ -25,7 +25,7 @@ std::shared_ptr<RobotAdapter> RobotAdapter::make()
 {
   auto robot_adapter = std::shared_ptr<RobotAdapter>(new RobotAdapter());
 
-  auto qos = rclcpp::SystemDefaultsQoS().reliable().transient_local();
+  auto qos = rclcpp::SystemDefaultsQoS().reliable().durability_volatile();
 
   robot_adapter->cmd_pose_pub_ =
     robot_adapter->create_publisher<PoseArray>("cmd_pose", qos);
@@ -38,6 +38,33 @@ std::shared_ptr<RobotAdapter> RobotAdapter::make()
         m->moving_ = false;
       }
     });
+
+  robot_adapter->current_pose_sub_ =
+    robot_adapter->create_subscription<PoseArray>(
+      "pose", qos,
+      [w = std::weak_ptr<RobotAdapter>(robot_adapter)](const PoseArray& msg) {
+        if (auto m = w.lock())
+        {
+          std::lock_guard<std::mutex> lock(m->position_mutex_);
+
+          tf2::Quaternion orientation_out;
+          tf2::fromMsg(msg.poses.at(0).orientation, orientation_out);
+          tf2::Matrix3x3 rotation(orientation_out);
+          [[maybe_unused]]
+          double roll,
+            pitch;
+          double yaw;
+          rotation.getRPY(roll, pitch, yaw);
+
+          vda5050_types::AGVPosition position;
+          position.x = msg.poses.at(0).position.x;
+          position.y = msg.poses.at(0).position.y;
+          position.theta = yaw;
+          position.position_initialized = true;
+
+          m->current_position_ = position;
+        }
+      });
 
   return robot_adapter;
 }
@@ -76,6 +103,13 @@ void RobotAdapter::move(const vda5050_types::Node& node)
 bool RobotAdapter::moving()
 {
   return this->moving_;
+}
+
+//=============================================================================
+vda5050_types::AGVPosition RobotAdapter::current_position()
+{
+  std::lock_guard<std::mutex> lock(position_mutex_);
+  return current_position_;
 }
 
 //=============================================================================
