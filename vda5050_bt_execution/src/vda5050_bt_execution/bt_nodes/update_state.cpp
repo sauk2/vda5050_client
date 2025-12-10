@@ -82,7 +82,7 @@ BT::NodeStatus UpdateState::onRunning()
 
         vda5050_types::State state;
         state.header = *current_header_;
-        state.agv_position = context->robot_adapter->current_position();
+        state.agv_position = context->robot_adapter->get_position();
         nlohmann::json j = state;
         context->mqtt_client->publish(topic_, j.dump(), 0);
         VDA5050_INFO("Published state");
