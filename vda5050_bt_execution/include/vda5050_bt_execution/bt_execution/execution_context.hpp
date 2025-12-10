@@ -29,7 +29,7 @@
 #include <vda5050_types/order.hpp>
 
 #include "vda5050_bt_execution/bt_execution/client_config.hpp"
-#include "vda5050_bt_execution/bt_utils/robot_adapter.hpp"
+#include "vda5050_bt_execution/bt_execution/robot_adapter_interface.hpp"
 
 namespace vda5050_bt_execution {
 
@@ -44,7 +44,7 @@ struct ExecutionContext
   std::shared_ptr<vda5050_types::Order> current_order;
   size_t current_node_idx;
 
-  std::shared_ptr<RobotAdapter> robot_adapter;
+  std::shared_ptr<RobotAdapterInterface> robot_adapter;
 
   std::atomic_bool request_state_publish;
 };

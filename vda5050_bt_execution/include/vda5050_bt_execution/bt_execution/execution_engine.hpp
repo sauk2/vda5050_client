@@ -27,16 +27,20 @@
 
 #include "vda5050_bt_execution/bt_execution/client_config.hpp"
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
+#include "vda5050_bt_execution/bt_execution/robot_adapter_interface.hpp"
 
 namespace vda5050_bt_execution {
 
 class ExecutionEngine : public std::enable_shared_from_this<ExecutionEngine>
 {
 public:
-  static std::shared_ptr<ExecutionEngine> make(const ClientConfig& config);
+  static std::shared_ptr<ExecutionEngine> make(
+    const ClientConfig& config,
+    std::shared_ptr<RobotAdapterInterface> robot_adapter);
 
   static std::shared_ptr<ExecutionEngine> make_and_init(
-    const ClientConfig& config);
+    const ClientConfig& config,
+    std::shared_ptr<RobotAdapterInterface> robot_adapter);
 
   void initialize();
 
@@ -49,7 +53,9 @@ public:
   void shutdown();
 
 private:
-  ExecutionEngine(const ClientConfig& config);
+  ExecutionEngine(
+    const ClientConfig& config,
+    std::shared_ptr<RobotAdapterInterface> robot_adapter);
 
   BT::Tree tree_;
   std::shared_ptr<ExecutionContext> context_;

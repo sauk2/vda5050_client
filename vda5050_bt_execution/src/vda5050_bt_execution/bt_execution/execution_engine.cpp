@@ -19,11 +19,11 @@
 #include <fmt/core.h>
 
 #include "vda5050_bt_execution/bt_execution/execution_engine.hpp"
+#include "vda5050_bt_execution/bt_execution/robot_adapter_interface.hpp"
 #include "vda5050_bt_execution/bt_nodes/execute_order.hpp"
 #include "vda5050_bt_execution/bt_nodes/monitor_connection.hpp"
 #include "vda5050_bt_execution/bt_nodes/update_order.hpp"
 #include "vda5050_bt_execution/bt_nodes/update_state.hpp"
-#include "vda5050_bt_execution/bt_utils/robot_adapter.hpp"
 
 #include <vda5050_core/logger/logger.hpp>
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
@@ -36,19 +36,21 @@ namespace vda5050_bt_execution {
 
 //=============================================================================
 std::shared_ptr<ExecutionEngine> ExecutionEngine::make(
-  const ClientConfig& config)
+  const ClientConfig& config,
+  std::shared_ptr<RobotAdapterInterface> robot_adapter)
 {
-  auto execution_engine =
-    std::shared_ptr<ExecutionEngine>(new ExecutionEngine(config));
+  auto execution_engine = std::shared_ptr<ExecutionEngine>(
+    new ExecutionEngine(config, robot_adapter));
   return execution_engine;
 }
 
 //=============================================================================
 std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init(
-  const ClientConfig& config)
+  const ClientConfig& config,
+  std::shared_ptr<RobotAdapterInterface> robot_adapter)
 {
-  auto execution_engine =
-    std::shared_ptr<ExecutionEngine>(new ExecutionEngine(config));
+  auto execution_engine = std::shared_ptr<ExecutionEngine>(
+    new ExecutionEngine(config, robot_adapter));
   execution_engine->initialize();
   return execution_engine;
 }
@@ -57,7 +59,6 @@ std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init(
 void ExecutionEngine::initialize()
 {
   context_->mqtt_client->connect();
-  context_->robot_adapter->start();
 
   BT::BehaviorTreeFactory factory;
 
@@ -114,13 +115,15 @@ void ExecutionEngine::shutdown()
 }
 
 //=============================================================================
-ExecutionEngine::ExecutionEngine(const ClientConfig& config)
+ExecutionEngine::ExecutionEngine(
+  const ClientConfig& config,
+  std::shared_ptr<RobotAdapterInterface> robot_adapter)
 : context_(std::make_shared<ExecutionContext>()), running_(false)
 {
+  context_->robot_adapter = robot_adapter;
+
   context_->mqtt_client = vda5050_core::mqtt_client::create_default_client(
     config.mqtt_broker_address, config.serial_number);
-
-  context_->robot_adapter = RobotAdapter::make();
 
   context_->client_config =
     std::make_shared<const ClientConfig>(std::move(config));
