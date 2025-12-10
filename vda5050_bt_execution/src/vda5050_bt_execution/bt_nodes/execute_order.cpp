@@ -49,10 +49,10 @@ BT::NodeStatus ExecuteOrder::onRunning()
   if (!context) return BT::NodeStatus::RUNNING;
 
   if (
-    context->current_order && !context->robot_adapter->moving() &&
+    context->current_order && !context->robot_adapter->is_moving() &&
     context->current_node_idx < context->current_order->nodes.size())
   {
-    context->robot_adapter->move(
+    context->robot_adapter->move_to_node(
       context->current_order->nodes[context->current_node_idx]);
   }
 
