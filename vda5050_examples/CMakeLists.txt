@@ -11,11 +11,18 @@ find_package(vda5050_core REQUIRED)
 
 include(GNUInstallDirs)
 
-add_executable(bt_execution_main src/bt_execution_main.cpp)
-
+add_executable(bt_execution_main
+  src/bt_execution_main.cpp
+  src/vda5050_examples/robot_adapter.cpp
+)
 target_link_libraries(bt_execution_main
   PUBLIC
     vda5050_bt_execution::vda5050_bt_execution
+)
+target_include_directories(bt_execution_main
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 install(
@@ -25,7 +32,6 @@ install(
 )
 
 add_executable(master_control src/master_control.cpp)
-
 target_link_libraries(master_control
   PUBLIC
     vda5050_core::vda5050_core

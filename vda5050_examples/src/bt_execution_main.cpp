@@ -21,6 +21,8 @@
 #include <vda5050_bt_execution/bt_execution/client_config.hpp>
 #include <vda5050_bt_execution/bt_execution/execution_engine.hpp>
 
+#include "vda5050_examples/robot_adapter.hpp"
+
 static bool shutdown = false;
 
 void signal_handler(int /*sig_num*/)
@@ -40,8 +42,11 @@ int main(int argc, char** argv)
 
   rclcpp::init(argc, argv);
 
+  auto robot_adapter = RobotAdapter::make();
+  robot_adapter->start();
+
   auto execution_engine =
-    vda5050_bt_execution::ExecutionEngine::make_and_init(config);
+    vda5050_bt_execution::ExecutionEngine::make_and_init(config, robot_adapter);
   VDA5050_INFO("Starting VDA5050 Client...");
 
   while (!shutdown)
