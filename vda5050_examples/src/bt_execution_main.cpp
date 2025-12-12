@@ -56,5 +56,6 @@ int main(int argc, char** argv)
   }
 
   execution_engine->shutdown();
+  robot_adapter->shutdown();
   VDA5050_INFO("Shutdown VDA5050 Client");
 }
