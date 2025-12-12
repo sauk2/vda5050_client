@@ -20,9 +20,12 @@
 #define VDA5050_EXAMPLES__ROBOT_ADAPTER_HPP_
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/node.hpp>
@@ -50,7 +53,9 @@ public:
 
   void start();
 
-  void move_to_node(const vda5050_types::Node& node) override;
+  void move_to_node(
+    const vda5050_types::Node& node,
+    std::function<void()> done_callback) override;
 
   bool is_moving() override;
 
@@ -71,6 +76,10 @@ private:
 
   std::mutex position_mutex_;
   vda5050_types::AGVPosition current_position_;
+
+  std::unordered_map<std::string, std::vector<double>> map_;
+
+  std::function<void()> done_callback_;
 };
 
 #endif  // VDA5050_EXAMPLES__ROBOT_ADAPTER_HPP_

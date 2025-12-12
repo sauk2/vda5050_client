@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+#include <vda5050_core/logger/logger.hpp>
+
 #include "vda5050_examples/robot_adapter.hpp"
 
 //=============================================================================
@@ -33,7 +35,12 @@ std::shared_ptr<RobotAdapter> RobotAdapter::make()
     [w = std::weak_ptr<RobotAdapter>(robot_adapter)](const Pose& /*msg*/) {
       if (auto m = w.lock())
       {
-        m->moving_ = false;
+        if (m->moving_)
+        {
+          if (m->done_callback_) m->done_callback_();
+          m->moving_ = false;
+          VDA5050_INFO("Pose reached");
+        }
       }
     });
 
@@ -64,6 +71,12 @@ std::shared_ptr<RobotAdapter> RobotAdapter::make()
         }
       });
 
+  robot_adapter->map_ = std::unordered_map<std::string, std::vector<double>>{
+    {"N1", {1.78, -9.4, -3.14}},
+    {"N2", {-3.75, -9.4, 1.57}},
+    {"N3", {-3.75, 9.18, 3.14}},
+    {"N4", {-5.9, 9.18, 3.14}}};
+
   return robot_adapter;
 }
 
@@ -76,16 +89,22 @@ void RobotAdapter::start()
 }
 
 //=============================================================================
-void RobotAdapter::move_to_node(const vda5050_types::Node& node)
+void RobotAdapter::move_to_node(
+  const vda5050_types::Node& node, std::function<void()> done_callback)
 {
   if (moving_) return;
 
+  done_callback_ = done_callback;
+
+  auto it = map_.find(node.node_id);
+  if (it == map_.end()) return;
+
   Point point;
-  point.x = node.node_position.value().x;
-  point.y = node.node_position.value().y;
+  point.x = it->second[0];
+  point.y = it->second[1];
 
   tf2::Quaternion quaternion;
-  quaternion.setRPY(0.0, 0.0, node.node_position.value().theta.value_or(0.0));
+  quaternion.setRPY(0.0, 0.0, it->second[2]);
   Quaternion orientation = tf2::toMsg(quaternion);
 
   auto pose =
