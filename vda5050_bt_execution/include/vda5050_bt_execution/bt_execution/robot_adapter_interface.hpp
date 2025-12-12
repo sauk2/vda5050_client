@@ -19,6 +19,8 @@
 #ifndef VDA5050_BT_EXECUTION__BT_EXECUTION__ROBOT_ADAPTER_INTERFACE_HPP_
 #define VDA5050_BT_EXECUTION__BT_EXECUTION__ROBOT_ADAPTER_INTERFACE_HPP_
 
+#include <functional>
+
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/node.hpp>
 
@@ -32,7 +34,8 @@ public:
 
   virtual ~RobotAdapterInterface() = default;
 
-  virtual void move_to_node(const Node& node) = 0;
+  virtual void move_to_node(
+    const vda5050_types::Node& node, std::function<void()> done_callback) = 0;
 
   virtual bool is_moving() = 0;
 
