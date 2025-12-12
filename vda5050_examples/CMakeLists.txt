@@ -37,6 +37,7 @@ target_link_libraries(master_control
     vda5050_core::vda5050_core
     vda5050_types::vda5050_types
     vda5050_json_utils::vda5050_json_utils
+    vda5050_bt_execution::vda5050_bt_execution
 )
 
 install(

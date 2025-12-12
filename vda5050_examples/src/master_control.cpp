@@ -16,8 +16,13 @@
  * limitations under the License.
  */
 
-#include <atomic>
+#include <fmt/core.h>
 
+#include <atomic>
+#include <chrono>
+#include <string>
+
+#include <vda5050_bt_execution/bt_execution/client_config.hpp>
 #include <vda5050_core/logger/logger.hpp>
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
 #include <vda5050_json_utils/serialization.hpp>
@@ -26,37 +31,84 @@
 
 int main()
 {
+  vda5050_bt_execution::ClientConfig config{
+    "uagv",
+    "v2",
+    "ROS-I",
+    "S001",
+    "tcp://localhost:1883",
+    std::chrono::seconds(10)};
+
   auto mqtt_client = vda5050_core::mqtt_client::create_default_client(
-    "tcp://localhost:1883", "master");
+    config.mqtt_broker_address, "master");
 
   std::atomic_bool connected = false;
-  std::string topic_prefix = "uagv/v2/ROS-I/S001/";
-  vda5050_types::Header header;
+
+  std::string topic_prefix = fmt::format(
+    "{}/{}/{}/{}/", config.interface, config.version, config.manufacturer,
+    config.serial_number);
 
   mqtt_client->connect();
   if (mqtt_client->connected()) VDA5050_INFO("Connected ...");
 
   mqtt_client->subscribe(
     topic_prefix + "connection",
-    [&connected, &header](
-      const std::string& /*topic*/, const std::string& msg) {
-      VDA5050_INFO("Received connection request from S001");
+    [&connected](const std::string& /*topic*/, const std::string& msg) {
       auto j = nlohmann::json::parse(msg);
       vda5050_types::Connection connection = j;
-      header = connection.header;
 
-      connected = true;
+      VDA5050_INFO(
+        "Received connection request from {}", connection.header.serial_number);
+
+      if (connection.connection_state == vda5050_types::ConnectionState::ONLINE)
+        connected = true;
     },
     1);
 
   while (!connected);
 
-  // vda5050_types::Order order;
+  vda5050_types::Header header;
+  header.timestamp = std::chrono::system_clock::now();
+  header.version = config.version;
+  header.manufacturer = config.manufacturer;
+  header.serial_number = config.serial_number;
 
-  // nlohmann::json j = order;
-  // mqtt_client->publish(topic_prefix + "order", j.dump(), 0);
+  vda5050_types::Order order;
+  order.header = header;
+  order.order_id = "test_order";
+  order.order_update_id = 0;
 
-  // VDA5050_INFO("Published order to S001");
+  std::vector<std::string> seq_list = {"N1", "E1", "N2", "E2",
+                                       "N3", "E3", "N4"};
+  for (uint32_t i = 0; i < seq_list.size(); i++)
+  {
+    if (i % 2 == 0)
+    {
+      vda5050_types::Node node;
+      node.node_id = seq_list[i];
+      node.sequence_id = i;
+      node.released = true;
+
+      order.nodes.push_back(node);
+    }
+    else
+    {
+      vda5050_types::Edge edge;
+      edge.edge_id = seq_list[i];
+      edge.sequence_id = i;
+      edge.start_node_id = seq_list[i - 1];
+      edge.end_node_id = seq_list[i + 1];
+      edge.released = true;
+
+      order.edges.push_back(edge);
+    }
+  }
+
+  nlohmann::json j = order;
+  VDA5050_INFO("{}", j.dump(4));
+  mqtt_client->publish(topic_prefix + "order", j.dump(), 0);
+
+  VDA5050_INFO("Published order to {}", config.serial_number);
 
   return 0;
 }
