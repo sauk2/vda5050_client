@@ -71,6 +71,8 @@ BT::NodeStatus MonitorConnection::onStart()
         vda5050_types::ConnectionState::CONNECTIONBROKEN;
       nlohmann::json j = connection_will;
       context->mqtt_client->set_will(topic_, j.dump(), 1);
+
+      context->mqtt_client->connect();
     }
   }
 
