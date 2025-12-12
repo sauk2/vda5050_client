@@ -58,14 +58,12 @@ std::shared_ptr<ExecutionEngine> ExecutionEngine::make_and_init(
 //=============================================================================
 void ExecutionEngine::initialize()
 {
-  context_->mqtt_client->connect();
-
   BT::BehaviorTreeFactory factory;
 
   factory.registerNodeType<MonitorConnection>("MonitorConnection");
   factory.registerNodeType<UpdateState>("UpdateState");
-  // factory.registerNodeType<UpdateOrder>("UpdateOrder");
-  // factory.registerNodeType<ExecuteOrder>("ExecuteOrder");
+  factory.registerNodeType<UpdateOrder>("UpdateOrder");
+  factory.registerNodeType<ExecuteOrder>("ExecuteOrder");
 
   // TODO(sauk): Try to put MonitorConnection in a ReactiveSequence with all
   // other nodes inside a Parallel
@@ -76,6 +74,8 @@ void ExecutionEngine::initialize()
       <Parallel>
         <MonitorConnection context="{context}"/>
         <UpdateState context="{context}"/>
+        <UpdateOrder context="{context}"/>
+        <ExecuteOrder context="{context}"/>
       </Parallel>
     </BehaviorTree>
   </root>
