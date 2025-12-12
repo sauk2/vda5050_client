@@ -16,8 +16,12 @@
  * limitations under the License.
  */
 
-#include "vda5050_bt_execution/bt_nodes/execute_order.hpp"
+#include <fmt/core.h>
+
+#include <vda5050_core/logger/logger.hpp>
+
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
+#include "vda5050_bt_execution/bt_nodes/execute_order.hpp"
 
 namespace vda5050_bt_execution {
 
@@ -48,18 +52,34 @@ BT::NodeStatus ExecuteOrder::onRunning()
 
   if (!context) return BT::NodeStatus::RUNNING;
 
-  if (
-    context->current_order && !context->robot_adapter->is_moving() &&
-    context->current_node_idx < context->current_order->nodes.size())
+  std::lock_guard<std::mutex> lock(context->order_mutex);
+  if (context->current_order && !context->robot_adapter->is_moving())
   {
-    context->robot_adapter->move_to_node(
-      context->current_order->nodes[context->current_node_idx]);
+    if (context->next_node == context->current_order->nodes.end())
+    {
+      VDA5050_INFO("Order completed");
+      context->current_order.reset();
+    }
+    else
+    {
+      context->robot_adapter->move_to_node(
+        *context->next_node, [w = std::weak_ptr<ExecutionContext>(context)]() {
+          if (auto m = w.lock())
+          {
+            std::lock_guard<std::mutex> lock(m->order_mutex);
+            m->next_node++;
+          }
+        });
+    }
   }
 
   return BT::NodeStatus::RUNNING;
 }
 
 //=============================================================================
-void ExecuteOrder::onHalted() {}
+void ExecuteOrder::onHalted()
+{
+  // Nothing to do here ...
+}
 
 }  // namespace vda5050_bt_execution
