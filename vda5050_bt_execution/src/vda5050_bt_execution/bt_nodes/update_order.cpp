@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-#include "vda5050_bt_execution/bt_nodes/update_order.hpp"
+#include <vda5050_core/logger/logger.hpp>
+
 #include "vda5050_bt_execution/bt_execution/execution_context.hpp"
+#include "vda5050_bt_execution/bt_nodes/update_order.hpp"
 
 namespace vda5050_bt_execution {
 
 //============================================================================
 UpdateOrder::UpdateOrder(const std::string& name, const BT::NodeConfig& config)
-: BT::SyncActionNode(name, config)
+: BT::StatefulActionNode(name, config)
 {
   // Nothing to do here ...
 }
@@ -35,22 +37,62 @@ BT::PortsList UpdateOrder::providedPorts()
 }
 
 //============================================================================
-BT::NodeStatus UpdateOrder::tick()
+BT::NodeStatus UpdateOrder::onStart()
 {
   auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
 
-  if (context)
+  if (context && context->mqtt_client)
   {
-    std::lock_guard<std::mutex> lock(context->order_mutex);
-    if (!context->incoming_order_queue.empty())
-    {
-      context->current_order = context->incoming_order_queue.front();
-      context->incoming_order_queue.pop();
-      context->current_node_idx = 0;
-    }
+    topic_ = fmt::format(
+      "{}/{}/{}/{}/order", context->client_config->interface,
+      context->client_config->version, context->client_config->manufacturer,
+      context->client_config->serial_number);
+
+    context->mqtt_client->subscribe(
+      topic_,
+      [w = std::weak_ptr<ExecutionContext>(context)](
+        const std::string& /*topic*/, const std::string& message) {
+        if (auto m = w.lock())
+        {
+          std::lock_guard<std::mutex> lock(m->order_mutex);
+          auto j = nlohmann::json::parse(message);
+          vda5050_types::Order order = j;
+
+          m->incoming_order_queue.push(
+            std::make_shared<vda5050_types::Order>(order));
+
+          VDA5050_INFO("Received order: {}", order.order_id);
+        }
+      },
+      0);
+  }
+  return BT::NodeStatus::RUNNING;
+}
+
+//============================================================================
+BT::NodeStatus UpdateOrder::onRunning()
+{
+  auto context = getInput<std::shared_ptr<ExecutionContext>>("context").value();
+
+  if (!context) return BT::NodeStatus::RUNNING;
+
+  std::lock_guard<std::mutex> lock(context->order_mutex);
+  if (!context->incoming_order_queue.empty())
+  {
+    context->current_order = context->incoming_order_queue.front();
+    context->incoming_order_queue.pop();
+    context->next_node = context->current_order->nodes.begin();
+
+    VDA5050_INFO("Processed order: {}", context->current_order->order_id);
   }
 
-  return BT::NodeStatus::SUCCESS;
+  return BT::NodeStatus::RUNNING;
+}
+
+//============================================================================
+void UpdateOrder::onHalted()
+{
+  // Nothing to do here ...
 }
 
 }  // namespace vda5050_bt_execution
