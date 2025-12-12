@@ -42,7 +42,7 @@ struct ExecutionContext
   std::mutex order_mutex;
   std::queue<std::shared_ptr<vda5050_types::Order>> incoming_order_queue;
   std::shared_ptr<vda5050_types::Order> current_order;
-  size_t current_node_idx;
+  std::vector<vda5050_types::Node>::iterator next_node;
 
   std::shared_ptr<RobotAdapterInterface> robot_adapter;
 
