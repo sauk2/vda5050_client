@@ -8,7 +8,6 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(vda5050_types REQUIRED)
 find_package(nlohmann_json REQUIRED)
-## find_package(vda5050_msgs REQUIRED)
 
 include(GNUInstallDirs)
 
