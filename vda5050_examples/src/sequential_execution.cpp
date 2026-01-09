@@ -69,5 +69,8 @@ int main()
 
   strategy->step(context);
   strategy->step(context);
+
+  strategy->shutdown();
+  context->shutdown();
 }
 
