@@ -21,6 +21,11 @@
 
 namespace vda5050_execution {
 
+SequentialExecutionStrategy::~SequentialExecutionStrategy()
+{
+  shutdown();
+}
+
 //=============================================================================
 std::shared_ptr<SequentialExecutionStrategy> SequentialExecutionStrategy::make()
 {
@@ -56,7 +61,14 @@ void SequentialExecutionStrategy::step(
 }
 
 //=============================================================================
-SequentialExecutionStrategy::SequentialExecutionStrategy() : steps(0)
+void SequentialExecutionStrategy::shutdown()
+{
+  shutdown_ = true;
+}
+
+//=============================================================================
+SequentialExecutionStrategy::SequentialExecutionStrategy()
+: steps(0), shutdown_(false)
 {
   // Nothing to do here ...
 }

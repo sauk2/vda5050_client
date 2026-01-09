@@ -19,6 +19,7 @@
 #ifndef VDA5050_EXECUTION__SEQUENTIAL_EXECUTION_STRATEGY_HPP_
 #define VDA5050_EXECUTION__SEQUENTIAL_EXECUTION_STRATEGY_HPP_
 
+#include <atomic>
 #include <memory>
 
 #include "vda5050_execution/execution_context_interface.hpp"
@@ -29,14 +30,20 @@ namespace vda5050_execution {
 class SequentialExecutionStrategy : public ExecutionStrategyInterface
 {
 public:
+  ~SequentialExecutionStrategy();
+
   static std::shared_ptr<SequentialExecutionStrategy> make();
 
   void step(std::shared_ptr<ExecutionContextInterface> context) override;
+
+  void shutdown();
 
 private:
   SequentialExecutionStrategy();
 
   int steps;
+
+  std::atomic_bool shutdown_;
 };
 
 }  // namespace vda5050_execution
