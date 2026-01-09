@@ -49,6 +49,12 @@ std::string create_topic(std::string sub_topic, const ClientConfig& config)
 }
 
 //=============================================================================
+BaseExecutionContext::~BaseExecutionContext()
+{
+  shutdown();
+}
+
+//=============================================================================
 std::shared_ptr<BaseExecutionContext> BaseExecutionContext::make(
   const ClientConfig& config)
 {
@@ -100,12 +106,21 @@ void BaseExecutionContext::request_state_publish()
   state_cv_.notify_one();
 }
 
+void BaseExecutionContext::shutdown()
+{
+  shutdown_ = true;
+  if (state_update_thread_.joinable()) state_update_thread_.join();
+
+  mqtt_client_->disconnect();
+}
+
 //=============================================================================
 BaseExecutionContext::BaseExecutionContext(const ClientConfig& config)
 : config_(config),
   mqtt_client_(vda5050_core::mqtt_client::create_default_client(
     config.mqtt_broker_address, config.serial_number)),
-  request_state_publish_(true)
+  request_state_publish_(true),
+  shutdown_(false)
 {
   topic_names_ = {
     {MessageType::CONNECTION, "connection"},
@@ -155,6 +170,10 @@ BaseExecutionContext::BaseExecutionContext(const ClientConfig& config)
         auto header =
           create_header(c->header_ids_[MessageType::STATE]++, c->config_);
         c->current_state_->header = header;
+        c->current_state_->agv_position =
+          *c->provider().query<PositionData>()->agv_position;
+        c->current_state_->battery_state =
+          *c->provider().query<BatteryData>()->battery_state;
         nlohmann::json j = *c->current_state_;
 
         c->mqtt_client_->publish(
@@ -174,6 +193,15 @@ BaseExecutionContext::BaseExecutionContext(const ClientConfig& config)
       }
     }
   });
+
+  vda5050_types::Connection connection;
+  connection.header =
+    create_header(header_ids_[MessageType::CONNECTION]++, config_);
+  connection.connection_state = vda5050_types::ConnectionState::ONLINE;
+  nlohmann::json j = connection;
+  mqtt_client_->publish(
+    create_topic(topic_names_[MessageType::CONNECTION], config_), j.dump(),
+    CONNECTION_QOS);
 }
 
 }  // namespace vda5050_execution

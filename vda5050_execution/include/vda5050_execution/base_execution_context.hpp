@@ -50,6 +50,8 @@ class BaseExecutionContext
   public std::enable_shared_from_this<BaseExecutionContext>
 {
 public:
+  ~BaseExecutionContext();
+
   static std::shared_ptr<BaseExecutionContext> make(const ClientConfig& config);
 
   Segment get_next_segment() override;
@@ -73,6 +75,8 @@ public:
   void clear_errors() override;
 
   void request_state_publish();
+
+  void shutdown();
 
 private:
   BaseExecutionContext(const ClientConfig& config);
