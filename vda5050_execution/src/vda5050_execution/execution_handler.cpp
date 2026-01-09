@@ -48,7 +48,7 @@ void ExecutionHandler::spin()
 //=============================================================================
 void ExecutionHandler::spin_once()
 {
-  strategy_->step(context_);
+  if (!shutdown_) strategy_->step(context_);
 }
 
 //=============================================================================
