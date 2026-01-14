@@ -42,32 +42,58 @@ int main()
 
   auto strategy = vda5050_execution::SequentialExecutionStrategy::make();
 
-  strategy->engine().on<vda5050_execution::NavigationNodeReady>(
+  strategy->engine()->on<vda5050_execution::NavigationNodeReady>(
     [](std::shared_ptr<vda5050_execution::NavigationNodeReady> event) {
       VDA5050_INFO_STREAM("node_id: " << event->target_node->node_id);
       VDA5050_INFO_STREAM("edge_id: " << event->traversal_edge->edge_id);
     });
 
-  strategy->engine().on<vda5050_execution::NavigationStatusChange>(
+  strategy->engine()->on<vda5050_execution::NavigationStatusChange>(
     [](std::shared_ptr<vda5050_execution::NavigationStatusChange> event) {
       VDA5050_INFO_STREAM("pause: " << event->paused);
     });
 
   auto context = vda5050_execution::BaseExecutionContext::make(config);
 
-  context->provider().register_provider<vda5050_execution::PositionData>([]() {
-    auto p = std::make_shared<vda5050_execution::PositionData>();
-    p->agv_position = std::make_shared<vda5050_types::AGVPosition>();
-    return p;
-  });
+  context->provider()->on<vda5050_execution::PositionData>(
+    [w = context->weak_from_this()](
+      std::shared_ptr<vda5050_execution::PositionData> update) {
+      if (auto c = w.lock())
+      {
+        VDA5050_INFO_STREAM(
+          "position: [" << update->agv_position->x << ", "
+                        << update->agv_position->y << "]");
+        c->update_position(*update->agv_position);
+      }
+    });
 
-  context->provider().register_provider<vda5050_execution::BatteryData>([]() {
-    auto b = std::make_shared<vda5050_execution::BatteryData>();
-    b->battery_state = std::make_shared<vda5050_types::BatteryState>();
-    return b;
-  });
+  context->provider()->on<vda5050_execution::BatteryData>(
+    [w = context->weak_from_this()](
+      std::shared_ptr<vda5050_execution::BatteryData> update) {
+      if (auto c = w.lock())
+      {
+        VDA5050_INFO_STREAM(
+          "battery: " << update->battery_state->battery_charge);
+        c->update_battery_state(*update->battery_state);
+      }
+    });
+
+  auto pos_1 = std::make_shared<vda5050_types::AGVPosition>();
+  pos_1->x = 2;
+  pos_1->y = 3;
+  context->provider()->push<vda5050_execution::PositionData>(pos_1);
 
   strategy->step(context);
+
+  auto pos_2 = std::make_shared<vda5050_types::AGVPosition>();
+  pos_2->x = 3;
+  pos_2->y = 3;
+  context->provider()->push<vda5050_execution::PositionData>(pos_2);
+
+  auto battery = std::make_shared<vda5050_types::BatteryState>();
+  battery->battery_charge = 85.3;
+  context->provider()->push<vda5050_execution::BatteryData>(battery);
+
   strategy->step(context);
 
   strategy->shutdown();
