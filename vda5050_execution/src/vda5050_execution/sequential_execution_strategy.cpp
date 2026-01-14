@@ -17,10 +17,10 @@
  */
 
 #include "vda5050_execution/sequential_execution_strategy.hpp"
-#include "vda5050_execution/execution_engine.hpp"
 
 namespace vda5050_execution {
 
+//=============================================================================
 SequentialExecutionStrategy::~SequentialExecutionStrategy()
 {
   shutdown();
@@ -38,24 +38,25 @@ std::shared_ptr<SequentialExecutionStrategy> SequentialExecutionStrategy::make()
 void SequentialExecutionStrategy::step(
   std::shared_ptr<ExecutionContextInterface> context)
 {
-  if (auto segment = context->get_next_segment())
-  {
-    auto target_node = segment.nodes.front();
-    auto traversal_edge =
-      segment.edges.empty() ? nullptr : segment.edges.front();
-    engine_.emit<NavigationNodeReady>(target_node, traversal_edge);
-  }
-  // auto node = std::make_shared<vda5050_types::Node>(vda5050_types::Node{});
-  // node->node_id = "N1";
-  // auto edge = std::make_shared<vda5050_types::Edge>(vda5050_types::Edge{});
-  // edge->edge_id = "E1";
+  // if (auto segment = context->get_next_segment())
+  // {
+  //   auto target_node = segment.nodes.front();
+  //   auto traversal_edge =
+  //     segment.edges.empty() ? nullptr : segment.edges.front();
+  //   engine_.emit<NavigationNodeReady>(target_node, traversal_edge);
+  // }
 
-  // auto paused = true;
+  auto node = std::make_shared<vda5050_types::Node>(vda5050_types::Node{});
+  node->node_id = "N1";
+  auto edge = std::make_shared<vda5050_types::Edge>(vda5050_types::Edge{});
+  edge->edge_id = "E1";
 
-  // engine_.emit<NavigationNodeReady>(node, edge);
-  // engine_.emit<NavigationStatusChange>(paused);
+  auto paused = true;
 
-  // engine_.step();
+  engine_->emit<NavigationNodeReady>(node, edge);
+  engine_->emit<NavigationStatusChange>(paused);
+
+  engine_->step();
 
   steps++;
 }
