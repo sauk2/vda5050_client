@@ -64,40 +64,46 @@ ExecutionHandler::ExecutionHandler(
   std::shared_ptr<ExecutionDelegateInterface> delegate)
 : context_(context), strategy_(strategy), delegate_(delegate), shutdown_(false)
 {
-  strategy_->engine().on<NavigationNodeReady>(
+  strategy_->engine()->on<NavigationNodeReady>(
     [d = delegate_](std::shared_ptr<NavigationNodeReady> event) {
       d->on_navigation_node_ready(event->target_node, event->traversal_edge);
     });
 
-  strategy_->engine().on<NavigationSegmentReady>(
+  strategy_->engine()->on<NavigationSegmentReady>(
     [d = delegate_](std::shared_ptr<NavigationSegmentReady> event) {
       d->on_navigation_segment_ready(
         event->target_segment, event->traversal_edges);
     });
 
-  strategy_->engine().on<NavigationStatusChange>(
+  strategy_->engine()->on<NavigationStatusChange>(
     [d = delegate_](std::shared_ptr<NavigationStatusChange> event) {
       d->on_navigation_status_change(event->paused);
     });
 
-  strategy_->engine().on<NavigationReset>(
+  strategy_->engine()->on<NavigationReset>(
     [d = delegate_](std::shared_ptr<NavigationReset> /*event*/) {
       d->on_navigation_reset();
     });
 
-  context->provider().register_provider<vda5050_execution::PositionData>(
-    [d = delegate_]() {
-      auto p = std::make_shared<vda5050_execution::PositionData>();
-      p->agv_position = d->get_current_position();
-      return p;
+  context->provider()->on<vda5050_execution::PositionData>(
+    [w = std::weak_ptr<ExecutionContextInterface>(context_)](
+      std::shared_ptr<PositionData> update) {
+      if (auto c = w.lock())
+      {
+        c->update_position(*update->agv_position);
+      }
     });
 
-  context->provider().register_provider<vda5050_execution::BatteryData>(
-    [d = delegate_]() {
-      auto b = std::make_shared<vda5050_execution::BatteryData>();
-      b->battery_state = std::make_shared<vda5050_types::BatteryState>();
-      return b;
+  context->provider()->on<vda5050_execution::BatteryData>(
+    [w = std::weak_ptr<ExecutionContextInterface>(context_)](
+      std::shared_ptr<BatteryData> update) {
+      if (auto c = w.lock())
+      {
+        c->update_battery_state(*update->battery_state);
+      }
     });
+
+  delegate_->set_provider(context_->provider());
 }
 
 }  // namespace vda5050_execution

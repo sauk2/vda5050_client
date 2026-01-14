@@ -25,7 +25,6 @@
 #include <vda5050_types/edge.hpp>
 #include <vda5050_types/node.hpp>
 
-#include "vda5050_execution/client_config.hpp"
 #include "vda5050_execution/execution_context_interface.hpp"
 #include "vda5050_execution/execution_delegate_interface.hpp"
 #include "vda5050_execution/execution_strategy_interface.hpp"
