@@ -29,22 +29,53 @@ target_include_directories(sequential_execution
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+add_executable(execution_handler src/execution_handler.cpp)
+
+target_link_libraries(execution_handler
+  PUBLIC
+    vda5050_core::vda5050_core
+    vda5050_types::vda5050_types
+    vda5050_json_utils::vda5050_json_utils
+    vda5050_execution::vda5050_execution
+)
+
+target_include_directories(execution_handler
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
 install(
   TARGETS sequential_execution
   EXPORT sequential_execution
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  TARGETS execution_handler
+  EXPORT execution_handler
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
+  find_package(ament_cmake_cppcheck REQUIRED)
+  ament_cppcheck()
+
+  find_package(ament_cmake_cpplint REQUIRED)
+  set(cpplint_filters
+    "-whitespace/newline"
+  )
+  ament_cpplint(
+    FILTERS "${cpplint_filters}"
+  )
+
+  find_package(ament_cmake_clang_format REQUIRED)
+  ament_clang_format(
+    CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format"
+  )
+
+  find_package(ament_cmake_copyright REQUIRED)
+  ament_copyright()
 endif()
 
 ament_package()
