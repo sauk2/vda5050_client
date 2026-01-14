@@ -23,7 +23,9 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
 
@@ -32,18 +34,9 @@
 
 #include "vda5050_execution/client_config.hpp"
 #include "vda5050_execution/execution_context_interface.hpp"
+#include "vda5050_execution/protocol_adapter.hpp"
 
 namespace vda5050_execution {
-
-enum class MessageType
-{
-  CONNECTION,
-  STATE,
-  ORDER,
-  INSTANT_ACTIONS,
-  FACTSHEET,
-  VISUALIZATION
-};
 
 class BaseExecutionContext
 : public ExecutionContextInterface,
@@ -56,17 +49,23 @@ public:
 
   Segment get_next_segment() override;
 
-  void acknowledge_node_reached(const std::string& node_id) override;
-
   std::vector<std::shared_ptr<const vda5050_types::Action>>
   get_pending_actions() override;
 
   std::vector<std::shared_ptr<const vda5050_types::Action>>
   get_pending_instant_actions() override;
 
+  void acknowledge_sequence_reached(const std::uint32_t seq_id) override;
+
   void update_action_status(
-    const std::string& action_id, vda5050_types::ActionStatus status,
-    const std::vector<vda5050_types::Error>& errors = {}) override;
+    const std::string& action_id, vda5050_types::ActionStatus status) override;
+
+  void update_position(const vda5050_types::AGVPosition& position) override;
+
+  void update_battery_state(
+    const vda5050_types::BatteryState& battery) override;
+
+  void update_operating_mode(vda5050_types::OperatingMode mode) override;
 
   void add_error(const vda5050_types::Error& error) override;
 
@@ -79,13 +78,11 @@ public:
   void shutdown();
 
 private:
-  BaseExecutionContext(const ClientConfig& config);
+  explicit BaseExecutionContext(const ClientConfig& config);
 
   ClientConfig config_;
   std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
-
-  std::unordered_map<MessageType, std::string> topic_names_;
-  std::unordered_map<MessageType, uint32_t> header_ids_;
+  std::shared_ptr<ProtocolAdapter> protocol_adapter_;
 
   std::mutex order_mutex_;
   std::shared_ptr<vda5050_types::Order> current_order_;

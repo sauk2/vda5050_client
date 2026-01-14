@@ -32,23 +32,6 @@ constexpr int DEFAULT_QOS = 0;
 namespace vda5050_execution {
 
 //=============================================================================
-vda5050_types::Header create_header(
-  uint32_t header_id, const ClientConfig& config)
-{
-  return vda5050_types::Header{
-    header_id, std::chrono::system_clock::now(), config.version,
-    config.manufacturer, config.serial_number};
-}
-
-//=============================================================================
-std::string create_topic(std::string sub_topic, const ClientConfig& config)
-{
-  return fmt::format(
-    "{}/{}/{}/{}/{}", config.interface, config.version, config.manufacturer,
-    config.serial_number, sub_topic);
-}
-
-//=============================================================================
 BaseExecutionContext::~BaseExecutionContext()
 {
   shutdown();
@@ -67,7 +50,8 @@ std::shared_ptr<BaseExecutionContext> BaseExecutionContext::make(
 Segment BaseExecutionContext::get_next_segment() {}
 
 //=============================================================================
-void BaseExecutionContext::acknowledge_node_reached(const std::string& node_id)
+void BaseExecutionContext::acknowledge_sequence_reached(
+  const std::uint32_t seq_id)
 {
 }
 
@@ -85,8 +69,25 @@ BaseExecutionContext::get_pending_instant_actions()
 
 //=============================================================================
 void BaseExecutionContext::update_action_status(
-  const std::string& action_id, vda5050_types::ActionStatus status,
-  const std::vector<vda5050_types::Error>& errors)
+  const std::string& action_id, vda5050_types::ActionStatus status)
+{
+}
+
+//=============================================================================
+void BaseExecutionContext::update_position(
+  const vda5050_types::AGVPosition& position)
+{
+}
+
+//=============================================================================
+void BaseExecutionContext::update_battery_state(
+  const vda5050_types::BatteryState& battery)
+{
+}
+
+//=============================================================================
+void BaseExecutionContext::update_operating_mode(
+  vda5050_types::OperatingMode mode)
 {
 }
 
@@ -122,30 +123,43 @@ BaseExecutionContext::BaseExecutionContext(const ClientConfig& config)
   request_state_publish_(true),
   shutdown_(false)
 {
-  topic_names_ = {
-    {MessageType::CONNECTION, "connection"},
-    {MessageType::STATE, "state"},
-    {MessageType::ORDER, "order"},
-    {MessageType::INSTANT_ACTIONS, "instantActions"},
-    {MessageType::FACTSHEET, "factsheet"},
-    {MessageType::VISUALIZATION, "visualization"}};
+  vda5050_types::Connection connection_will;
+  connection_will.header.header_id = 0;
+  connection_will.header.version = config_.version;
+  connection_will.header.manufacturer = config_.manufacturer;
+  connection_will.header.serial_number = config_.serial_number;
+  connection_will.header.timestamp = std::chrono::system_clock::now();
+  connection_will.connection_state =
+    vda5050_types::ConnectionState::CONNECTIONBROKEN;
 
-  header_ids_ = {
-    {MessageType::CONNECTION, 0}, {MessageType::STATE, 0},
-    {MessageType::ORDER, 0},      {MessageType::INSTANT_ACTIONS, 0},
-    {MessageType::FACTSHEET, 0},  {MessageType::VISUALIZATION, 0}};
+  nlohmann::json j = connection_will;
 
-  mqtt_client_->connect();
+  mqtt_client_->set_will(
+    fmt::format(
+      "{}/{}/{}/{}/connection", config_.interface, config_.version,
+      config_.manufacturer, config_.serial_number),
+    j.dump(), CONNECTION_QOS);
 
-  mqtt_client_->subscribe(
-    create_topic(topic_names_[MessageType::ORDER], config_),
+  // mqtt_client_->connect();
+
+  protocol_adapter_ = ProtocolAdapter::make(
+    mqtt_client_, config_.interface, config_.version, config_.manufacturer,
+    config_.serial_number);
+
+  protocol_adapter_->subscribe<vda5050_types::Order>(
     [w = weak_from_this()](
-      const std::string& /*topic*/, const std::string& message) {
+      vda5050_types::Order order, std::optional<vda5050_types::Error> error) {
       if (auto c = w.lock())
       {
-        std::lock_guard<std::mutex> lock(c->order_mutex_);
-        vda5050_types::Order order = nlohmann::json::parse(message);
-        c->current_order_ = std::make_shared<vda5050_types::Order>(order);
+        if (error.has_value())
+        {
+          // process error
+        }
+        else
+        {
+          std::lock_guard<std::mutex> lock(c->order_mutex_);
+          c->current_order_ = std::make_shared<vda5050_types::Order>(order);
+        }
       }
     },
     DEFAULT_QOS);
@@ -165,43 +179,21 @@ BaseExecutionContext::BaseExecutionContext(const ClientConfig& config)
 
       lock.unlock();
 
-      try
-      {
-        auto header =
-          create_header(c->header_ids_[MessageType::STATE]++, c->config_);
-        c->current_state_->header = header;
-        c->current_state_->agv_position =
-          *c->provider().query<PositionData>()->agv_position;
-        c->current_state_->battery_state =
-          *c->provider().query<BatteryData>()->battery_state;
-        nlohmann::json j = *c->current_state_;
+      // c->current_state_->agv_position =
+      //   *c->provider().query<PositionData>()->agv_position;
+      // c->current_state_->battery_state =
+      //   *c->provider().query<BatteryData>()->battery_state;
+      c->protocol_adapter_->publish<vda5050_types::State>(
+        *c->current_state_, DEFAULT_QOS);
 
-        c->mqtt_client_->publish(
-          create_topic(c->topic_names_[MessageType::STATE], c->config_),
-          j.dump(), DEFAULT_QOS);
-
-        c->request_state_publish_ = false;
-      }
-      catch (const nlohmann::json::exception& e)
-      {
-      }
-      catch (const std::exception& e)
-      {
-      }
-      catch (...)
-      {
-      }
+      c->request_state_publish_ = false;
     }
   });
 
   vda5050_types::Connection connection;
-  connection.header =
-    create_header(header_ids_[MessageType::CONNECTION]++, config_);
   connection.connection_state = vda5050_types::ConnectionState::ONLINE;
-  nlohmann::json j = connection;
-  mqtt_client_->publish(
-    create_topic(topic_names_[MessageType::CONNECTION], config_), j.dump(),
-    CONNECTION_QOS);
+  protocol_adapter_->publish<vda5050_types::Connection>(
+    connection, DEFAULT_QOS);
 }
 
 }  // namespace vda5050_execution
