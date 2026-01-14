@@ -20,11 +20,14 @@
 #define VDA5050_EXECUTION__EXECUTION_DELEGATE_INTERFACE_HPP_
 
 #include <memory>
+#include <vector>
 
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/battery_state.hpp>
 #include <vda5050_types/edge.hpp>
 #include <vda5050_types/node.hpp>
+
+#include "vda5050_execution/provider.hpp"
 
 namespace vda5050_execution {
 
@@ -32,6 +35,8 @@ class ExecutionDelegateInterface
 {
 public:
   virtual ~ExecutionDelegateInterface() = default;
+
+  virtual void set_provider(std::shared_ptr<Provider> provider) = 0;
 
   virtual void on_navigation_node_ready(
     std::shared_ptr<const vda5050_types::Node> target_node,
@@ -49,11 +54,11 @@ public:
 
   virtual void on_navigation_reset() {}
 
-  virtual std::shared_ptr<vda5050_types::AGVPosition>
-  get_current_position() = 0;
+  // virtual std::shared_ptr<vda5050_types::AGVPosition>
+  // get_current_position() = 0;
 
-  virtual std::shared_ptr<vda5050_types::BatteryState>
-  get_current_battery() = 0;
+  // virtual std::shared_ptr<vda5050_types::BatteryState>
+  // get_current_battery() = 0;
 };
 
 }  // namespace vda5050_execution
