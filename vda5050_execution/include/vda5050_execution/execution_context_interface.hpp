@@ -20,8 +20,11 @@
 #define VDA5050_EXECUTION__EXECUTION_CONTEXT_INTERFACE_HPP_
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
+
 #include <vda5050_types/action.hpp>
 #include <vda5050_types/action_status.hpp>
 #include <vda5050_types/agv_position.hpp>
@@ -31,7 +34,7 @@
 #include <vda5050_types/node.hpp>
 #include <vda5050_types/operating_mode.hpp>
 
-#include "vda5050_execution/callback_registry.hpp"
+#include "vda5050_execution/provider.hpp"
 
 namespace vda5050_execution {
 
@@ -49,11 +52,14 @@ struct Segment
 class ExecutionContextInterface
 {
 public:
+  ExecutionContextInterface() : provider_(std::make_shared<Provider>())
+  {
+    // Nothing to do here ...
+  }
+
   virtual ~ExecutionContextInterface() = default;
 
   virtual Segment get_next_segment() = 0;
-
-  virtual void acknowledge_node_reached(const std::string& node_id) = 0;
 
   virtual std::vector<std::shared_ptr<const vda5050_types::Action>>
   get_pending_actions() = 0;
@@ -61,9 +67,17 @@ public:
   virtual std::vector<std::shared_ptr<const vda5050_types::Action>>
   get_pending_instant_actions() = 0;
 
+  virtual void acknowledge_sequence_reached(const std::uint32_t seq_id) = 0;
+
   virtual void update_action_status(
-    const std::string& action_id, vda5050_types::ActionStatus status,
-    const std::vector<vda5050_types::Error>& errors = {}) = 0;
+    const std::string& action_id, vda5050_types::ActionStatus status) = 0;
+
+  virtual void update_position(const vda5050_types::AGVPosition& position) = 0;
+
+  virtual void update_battery_state(
+    const vda5050_types::BatteryState& battery) = 0;
+
+  virtual void update_operating_mode(vda5050_types::OperatingMode mode) = 0;
 
   virtual void add_error(const vda5050_types::Error& error) = 0;
 
@@ -71,13 +85,13 @@ public:
 
   virtual void clear_errors() = 0;
 
-  CallbackRegistry& provider()
+  std::shared_ptr<Provider> provider()
   {
-    return providers_;
+    return provider_;
   }
 
 private:
-  CallbackRegistry providers_;
+  std::shared_ptr<Provider> provider_;
 };
 
 }  // namespace vda5050_execution
