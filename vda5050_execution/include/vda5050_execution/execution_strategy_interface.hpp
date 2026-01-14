@@ -19,6 +19,8 @@
 #ifndef VDA5050_EXECUTION__EXECUTION_STRATEGY_INTERFACE_HPP_
 #define VDA5050_EXECUTION__EXECUTION_STRATEGY_INTERFACE_HPP_
 
+#include <memory>
+
 #include "vda5050_execution/execution_context_interface.hpp"
 #include "vda5050_execution/execution_engine.hpp"
 
@@ -27,17 +29,19 @@ namespace vda5050_execution {
 class ExecutionStrategyInterface
 {
 public:
+  ExecutionStrategyInterface() : engine_(std::make_shared<ExecutionEngine>()) {}
+
   virtual ~ExecutionStrategyInterface() = default;
 
   virtual void step(std::shared_ptr<ExecutionContextInterface> context) = 0;
 
-  ExecutionEngine& engine()
+  std::shared_ptr<ExecutionEngine> engine()
   {
     return engine_;
   };
 
 protected:
-  ExecutionEngine engine_;
+  std::shared_ptr<ExecutionEngine> engine_;
 };
 
 }  // namespace vda5050_execution
