@@ -99,4 +99,3 @@ int main()
   strategy->shutdown();
   context->shutdown();
 }
-
