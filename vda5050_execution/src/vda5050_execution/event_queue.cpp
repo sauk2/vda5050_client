@@ -16,22 +16,20 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "vda5050_execution/event_queue.hpp"
 
 namespace vda5050_execution {
 
 //=============================================================================
-void EventQueue::push(std::shared_ptr<EventBase> event)
+void EventQueue::push_shared(
+  std::shared_ptr<EventBase> event, Priority priority)
 {
-  std::lock_guard<std::mutex> lock(mutex_);
-  queue_.push(event);
-}
+  if (!event) return;
 
-//=============================================================================
-bool EventQueue::empty() const
-{
   std::lock_guard<std::mutex> lock(mutex_);
-  return queue_.empty();
+  push_internal_(std::move(event), priority);
 }
 
 //=============================================================================
@@ -39,10 +37,57 @@ std::shared_ptr<EventBase> EventQueue::pop()
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (queue_.empty()) return nullptr;
+  if (!critical_queue_.empty()) return pop_internal_(critical_queue_);
+  if (!normal_queue_.empty()) return pop_internal_(normal_queue_);
 
-  auto event = std::move(queue_.front());
-  queue_.pop();
+  return nullptr;
+}
+
+//=============================================================================
+std::shared_ptr<EventBase> EventQueue::pop_critical_only()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (!critical_queue_.empty()) return pop_internal_(critical_queue_);
+
+  return nullptr;
+}
+
+//=============================================================================
+bool EventQueue::empty() const
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  return critical_queue_.empty() && normal_queue_.empty();
+}
+
+//=============================================================================
+void EventQueue::clear_normal()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  std::queue<std::shared_ptr<EventBase>> empty;
+  std::swap(normal_queue_, empty);
+}
+
+//=============================================================================
+void EventQueue::push_internal_(
+  std::shared_ptr<EventBase>&& event, Priority priority)
+{
+  if (priority == Priority::CRITICAL)
+  {
+    critical_queue_.push(std::move(event));
+  }
+  else
+  {
+    normal_queue_.push(std::move(event));
+  }
+}
+
+//=============================================================================
+std::shared_ptr<EventBase> EventQueue::pop_internal_(
+  std::queue<std::shared_ptr<EventBase>>& queue)
+{
+  auto event = std::move(queue.front());
+  queue.pop();
   return event;
 }
 
