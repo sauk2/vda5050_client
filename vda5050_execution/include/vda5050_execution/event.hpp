@@ -20,22 +20,17 @@
 #define VDA5050_EXECUTION__EVENT_HPP_
 
 #include <memory>
-#include <typeindex>
 #include <utility>
 #include <vector>
 
 #include <vda5050_types/edge.hpp>
 #include <vda5050_types/node.hpp>
 
+#include "vda5050_execution/base.hpp"
+
 namespace vda5050_execution {
 
-struct EventBase
-{
-  virtual ~EventBase() = default;
-  virtual std::type_index get_type() const = 0;
-};
-
-struct NavigationNodeReady : public EventBase
+struct NavigationNodeReady : public Initialize<NavigationNodeReady, EventBase>
 {
   std::shared_ptr<const vda5050_types::Node> target_node;
   std::shared_ptr<const vda5050_types::Edge> traversal_edge;
@@ -47,14 +42,10 @@ struct NavigationNodeReady : public EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(NavigationNodeReady));
-  }
 };
 
-struct NavigationSegmentReady : public EventBase
+struct NavigationSegmentReady
+: public Initialize<NavigationSegmentReady, EventBase>
 {
   std::vector<std::shared_ptr<const vda5050_types::Node>> target_segment;
   std::vector<std::shared_ptr<const vda5050_types::Edge>> traversal_edges;
@@ -66,14 +57,10 @@ struct NavigationSegmentReady : public EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(NavigationSegmentReady));
-  }
 };
 
-struct NavigationStatusChange : public EventBase
+struct NavigationStatusChange
+: public Initialize<NavigationStatusChange, EventBase>
 {
   bool paused = false;
 
@@ -81,23 +68,13 @@ struct NavigationStatusChange : public EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(NavigationStatusChange));
-  }
 };
 
-struct NavigationReset : public EventBase
+struct NavigationReset : public Initialize<NavigationReset, EventBase>
 {
   NavigationReset()
   {
     // Nothing to do here ...
-  }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(NavigationReset));
   }
 };
 
