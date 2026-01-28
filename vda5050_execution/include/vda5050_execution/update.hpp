@@ -20,23 +20,18 @@
 #define VDA5050_EXECUTION__UPDATE_HPP_
 
 #include <memory>
-#include <typeindex>
 #include <utility>
 
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/battery_state.hpp>
 #include <vda5050_types/operating_mode.hpp>
 
+#include "vda5050_execution/base.hpp"
+
 namespace vda5050_execution {
 
-struct UpdateBase
-{
-  virtual ~UpdateBase() = default;
-
-  virtual std::type_index get_type() const = 0;
-};
-
-struct SequenceAcknowledgement : public UpdateBase
+struct SequenceAcknowledgement
+: public Initialize<SequenceAcknowledgement, UpdateBase>
 {
   uint32_t sequence_id;
 
@@ -47,7 +42,7 @@ struct SequenceAcknowledgement : public UpdateBase
   }
 };
 
-struct PositionData : public UpdateBase
+struct PositionData : public Initialize<PositionData, UpdateBase>
 {
   std::shared_ptr<vda5050_types::AGVPosition> agv_position;
 
@@ -56,14 +51,9 @@ struct PositionData : public UpdateBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(PositionData));
-  }
 };
 
-struct BatteryData : public UpdateBase
+struct BatteryData : public Initialize<BatteryData, UpdateBase>
 {
   std::shared_ptr<vda5050_types::BatteryState> battery_state;
 
@@ -72,14 +62,9 @@ struct BatteryData : public UpdateBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(BatteryData));
-  }
 };
 
-struct OperatingModeData : public UpdateBase
+struct OperatingModeData : public Initialize<OperatingModeData, UpdateBase>
 {
   vda5050_types::OperatingMode operating_mode;
 
@@ -87,11 +72,6 @@ struct OperatingModeData : public UpdateBase
   : operating_mode(mode)
   {
     // Nothing to do here ...
-  }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(OperatingModeData));
   }
 };
 
