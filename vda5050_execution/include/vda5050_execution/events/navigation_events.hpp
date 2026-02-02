@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__EVENT_HPP_
-#define VDA5050_EXECUTION__EVENT_HPP_
+#ifndef VDA5050_EXECUTION__EVENTS__NAVIGATION_EVENTS_HPP_
+#define VDA5050_EXECUTION__EVENTS__NAVIGATION_EVENTS_HPP_
 
 #include <memory>
 #include <utility>
@@ -26,11 +26,14 @@
 #include <vda5050_types/edge.hpp>
 #include <vda5050_types/node.hpp>
 
-#include "vda5050_execution/base.hpp"
+#include "vda5050_execution/core/base.hpp"
 
 namespace vda5050_execution {
 
-struct NavigationNodeReady : public Initialize<NavigationNodeReady, EventBase>
+namespace events {
+
+struct NavigationNodeReady
+: public core::Initialize<NavigationNodeReady, core::EventBase>
 {
   std::shared_ptr<const vda5050_types::Node> target_node;
   std::shared_ptr<const vda5050_types::Edge> traversal_edge;
@@ -45,7 +48,7 @@ struct NavigationNodeReady : public Initialize<NavigationNodeReady, EventBase>
 };
 
 struct NavigationSegmentReady
-: public Initialize<NavigationSegmentReady, EventBase>
+: public core::Initialize<NavigationSegmentReady, core::EventBase>
 {
   std::vector<std::shared_ptr<const vda5050_types::Node>> target_segment;
   std::vector<std::shared_ptr<const vda5050_types::Edge>> traversal_edges;
@@ -60,7 +63,7 @@ struct NavigationSegmentReady
 };
 
 struct NavigationStatusChange
-: public Initialize<NavigationStatusChange, EventBase>
+: public core::Initialize<NavigationStatusChange, core::EventBase>
 {
   bool paused = false;
 
@@ -70,7 +73,8 @@ struct NavigationStatusChange
   }
 };
 
-struct NavigationReset : public Initialize<NavigationReset, EventBase>
+struct NavigationReset
+: public core::Initialize<NavigationReset, core::EventBase>
 {
   NavigationReset()
   {
@@ -78,6 +82,7 @@ struct NavigationReset : public Initialize<NavigationReset, EventBase>
   }
 };
 
+}  // namespace events
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__EVENT_HPP_
+#endif  // VDA5050_EXECUTION__EVENTS__NAVIGATION_EVENTS_HPP_
