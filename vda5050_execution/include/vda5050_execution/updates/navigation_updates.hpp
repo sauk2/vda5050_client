@@ -16,22 +16,21 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__UPDATE_HPP_
-#define VDA5050_EXECUTION__UPDATE_HPP_
-
-#include <memory>
-#include <utility>
+#ifndef VDA5050_EXECUTION__UPDATES__NAVIGATION_UPDATES_HPP_
+#define VDA5050_EXECUTION__UPDATES__NAVIGATION_UPDATES_HPP_
 
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/battery_state.hpp>
 #include <vda5050_types/operating_mode.hpp>
 
-#include "vda5050_execution/base.hpp"
+#include "vda5050_execution/core/base.hpp"
 
 namespace vda5050_execution {
 
+namespace updates {
+
 struct SequenceAcknowledgement
-: public Initialize<SequenceAcknowledgement, UpdateBase>
+: public core::Initialize<SequenceAcknowledgement, core::UpdateBase>
 {
   uint32_t sequence_id;
 
@@ -42,39 +41,7 @@ struct SequenceAcknowledgement
   }
 };
 
-struct PositionData : public Initialize<PositionData, UpdateBase>
-{
-  std::shared_ptr<vda5050_types::AGVPosition> agv_position;
-
-  explicit PositionData(std::shared_ptr<vda5050_types::AGVPosition> position)
-  : agv_position(std::move(position))
-  {
-    // Nothing to do here ...
-  }
-};
-
-struct BatteryData : public Initialize<BatteryData, UpdateBase>
-{
-  std::shared_ptr<vda5050_types::BatteryState> battery_state;
-
-  explicit BatteryData(std::shared_ptr<vda5050_types::BatteryState> battery)
-  : battery_state(battery)
-  {
-    // Nothing to do here ...
-  }
-};
-
-struct OperatingModeData : public Initialize<OperatingModeData, UpdateBase>
-{
-  vda5050_types::OperatingMode operating_mode;
-
-  explicit OperatingModeData(vda5050_types::OperatingMode mode)
-  : operating_mode(mode)
-  {
-    // Nothing to do here ...
-  }
-};
-
+}  // namespace updates
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__UPDATE_HPP_
+#endif  // VDA5050_EXECUTION__UPDATES__NAVIGATION_UPDATES_HPP_
