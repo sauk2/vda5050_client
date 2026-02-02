@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/protocol_adapter.hpp"
+#include "vda5050_execution/utils/protocol_adapter.hpp"
 
 namespace vda5050_execution {
+
+namespace utils {
 
 //=============================================================================
 std::shared_ptr<ProtocolAdapter> ProtocolAdapter::make(
@@ -68,4 +70,5 @@ ProtocolAdapter::ProtocolAdapter(
     {std::type_index(typeid(vda5050_types::Visualization)), 0}};
 }
 
+};  // namespace utils
 }  // namespace vda5050_execution

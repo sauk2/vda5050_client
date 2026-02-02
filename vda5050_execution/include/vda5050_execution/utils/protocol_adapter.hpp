@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
-#define VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
+#ifndef VDA5050_EXECUTION__UTILS__PROTOCOL_ADAPTER_HPP_
+#define VDA5050_EXECUTION__UTILS__PROTOCOL_ADAPTER_HPP_
 
 #include <fmt/core.h>
 
@@ -44,6 +44,8 @@
 #include <vda5050_types/visualization.hpp>
 
 namespace vda5050_execution {
+
+namespace utils {
 
 template <typename T>
 struct is_valid_message : std::false_type
@@ -178,6 +180,7 @@ private:
   std::string serial_number_;
 };
 
+}  // namespace utils
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
+#endif  // VDA5050_EXECUTION__UTILS__PROTOCOL_ADAPTER_HPP_
