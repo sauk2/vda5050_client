@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__BASE_HPP_
-#define VDA5050_EXECUTION__BASE_HPP_
+#ifndef VDA5050_EXECUTION__CORE__BASE_HPP_
+#define VDA5050_EXECUTION__CORE__BASE_HPP_
 
 #include <typeindex>
 
 namespace vda5050_execution {
+
+namespace core {
 
 struct Base
 {
@@ -41,12 +43,14 @@ struct ResourceBase : public Base
 template <typename DerivedT, typename BaseT>
 struct Initialize : public BaseT
 {
+  static inline const std::type_index type = std::type_index(typeid(DerivedT));
   std::type_index get_type() const override
   {
-    return std::type_index(typeid(DerivedT));
+    return type;
   }
 };
 
+}  // namespace core
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__BASE_HPP_
+#endif  // VDA5050_EXECUTION__CORE__BASE_HPP_
