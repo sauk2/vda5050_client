@@ -18,18 +18,27 @@
 
 #include <algorithm>
 
-#include "vda5050_execution/event_queue.hpp"
+#include "vda5050_execution/core/event_queue.hpp"
 
 namespace vda5050_execution {
 
+namespace core {
+
 //=============================================================================
-void EventQueue::push_shared(
-  std::shared_ptr<EventBase> event, Priority priority)
+void EventQueue::push(std::shared_ptr<EventBase> event, Priority priority)
 {
   if (!event) return;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  push_internal_(std::move(event), priority);
+
+  if (priority == Priority::CRITICAL)
+  {
+    critical_queue_.push(std::move(event));
+  }
+  else
+  {
+    normal_queue_.push(std::move(event));
+  }
 }
 
 //=============================================================================
@@ -69,20 +78,6 @@ void EventQueue::clear_normal()
 }
 
 //=============================================================================
-void EventQueue::push_internal_(
-  std::shared_ptr<EventBase>&& event, Priority priority)
-{
-  if (priority == Priority::CRITICAL)
-  {
-    critical_queue_.push(std::move(event));
-  }
-  else
-  {
-    normal_queue_.push(std::move(event));
-  }
-}
-
-//=============================================================================
 std::shared_ptr<EventBase> EventQueue::pop_internal_(
   std::queue<std::shared_ptr<EventBase>>& queue)
 {
@@ -91,4 +86,5 @@ std::shared_ptr<EventBase> EventQueue::pop_internal_(
   return event;
 }
 
+}  // namespace core
 }  // namespace vda5050_execution

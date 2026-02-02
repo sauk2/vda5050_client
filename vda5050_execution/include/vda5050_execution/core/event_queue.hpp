@@ -16,17 +16,19 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__EVENT_QUEUE_HPP_
-#define VDA5050_EXECUTION__EVENT_QUEUE_HPP_
+#ifndef VDA5050_EXECUTION__CORE__EVENT_QUEUE_HPP_
+#define VDA5050_EXECUTION__CORE__EVENT_QUEUE_HPP_
 
 #include <memory>
 #include <mutex>
 #include <queue>
 #include <type_traits>
 
-#include "vda5050_execution/base.hpp"
+#include "vda5050_execution/core/base.hpp"
 
 namespace vda5050_execution {
+
+namespace core {
 
 enum class Priority
 {
@@ -37,20 +39,7 @@ enum class Priority
 class EventQueue
 {
 public:
-  template <typename EventT, typename... Args>
-  void push(Priority priority, Args&&... args)
-  {
-    static_assert(
-      std::is_base_of_v<EventBase, EventT>,
-      "Event must be derived from EventBase.");
-
-    auto event = std::make_shared<EventT>(std::forward<Args>(args)...);
-
-    std::lock_guard<std::mutex> lock(mutex_);
-    push_internal_(event, priority);
-  }
-
-  void push_shared(
+  void push(
     std::shared_ptr<EventBase> event, Priority priority = Priority::NORMAL);
 
   std::shared_ptr<EventBase> pop();
@@ -62,8 +51,6 @@ public:
   void clear_normal();
 
 private:
-  void push_internal_(std::shared_ptr<EventBase>&& event, Priority priority);
-
   std::shared_ptr<EventBase> pop_internal_(
     std::queue<std::shared_ptr<EventBase>>& queue);
 
@@ -73,6 +60,7 @@ private:
   mutable std::mutex mutex_;
 };
 
+}  // namespace core
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__EVENT_QUEUE_HPP_
+#endif  // VDA5050_EXECUTION__CORE__EVENT_QUEUE_HPP_
