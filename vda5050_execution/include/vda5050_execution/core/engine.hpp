@@ -16,33 +16,40 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__EXECUTION_ENGINE_HPP_
-#define VDA5050_EXECUTION__EXECUTION_ENGINE_HPP_
+#ifndef VDA5050_EXECUTION__CORE__ENGINE_HPP_
+#define VDA5050_EXECUTION__CORE__ENGINE_HPP_
 
+#include <chrono>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "vda5050_execution/event_queue.hpp"
+#include "vda5050_execution/core/base.hpp"
+#include "vda5050_execution/core/event_queue.hpp"
 
 namespace vda5050_execution {
 
-class ExecutionEngine : public std::enable_shared_from_this<ExecutionEngine>
+namespace core {
+
+class Engine : public std::enable_shared_from_this<Engine>
 {
 public:
   template <typename EventT, typename... Args>
-  void emit(Args&&... args)
+  void emit(Priority priority, Args&&... args)
   {
     static_assert(
       std::is_base_of_v<EventBase, EventT>,
       "Event must be derived from EventBase");
 
-    emit_shared(std::make_shared<EventT>(std::forward<Args>(args)...));
+    emit_shared(
+      std::make_shared<EventT>(std::forward<Args>(args)...), priority);
   }
 
-  void emit_shared(std::shared_ptr<EventBase> event);
+  void emit_shared(
+    std::shared_ptr<EventBase> event, Priority priority = Priority::NORMAL);
 
   template <typename EventT>
   void on(std::function<void(std::shared_ptr<EventT>)> callback)
@@ -56,18 +63,59 @@ public:
       cb(std::static_pointer_cast<EventT>(event));
     };
 
+    std::lock_guard<std::mutex> lock(registry_mutex_);
     callbacks_[std::type_index(typeid(EventT))].push_back(std::move(wrapper));
   }
 
+  template <typename UpdateT>
+  void wait_for(
+    std::chrono::milliseconds timeout,
+    std::function<bool(std::shared_ptr<UpdateT>)> predicate = nullptr)
+  {
+    static_assert(
+      std::is_base_of_v<UpdateBase, UpdateT>,
+      "Update must be derived from UpdateBase");
+
+    std::lock_guard<std::mutex> lock(wait_mutex_);
+    wait_timeout_ = std::chrono::steady_clock::now() + timeout;
+
+    wait_predicate_ = [predicate](std::shared_ptr<UpdateBase> update) -> bool {
+      if (update->get_type() == std::type_index(typeid(UpdateT)))
+      {
+        auto update_t = std::static_pointer_cast<UpdateT>(update);
+        if (predicate)
+        {
+          return predicate(update_t);
+        }
+      }
+      return true;
+    };
+
+    waiting_ = true;
+  }
+
+  void notify(std::shared_ptr<UpdateBase> update);
+
   void step();
 
+  bool waiting() const;
+
 private:
+  void reset_internal_wait_();
+
   EventQueue event_queue_;
 
   using ErasedCallback = std::function<void(std::shared_ptr<EventBase>)>;
   std::unordered_map<std::type_index, std::vector<ErasedCallback>> callbacks_;
+  std::mutex registry_mutex_;
+
+  bool waiting_;
+  std::chrono::steady_clock::time_point wait_timeout_;
+  std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_;
+  mutable std::mutex wait_mutex_;
 };
 
+}  // namespace core
 }  // namespace vda5050_execution
 
-#endif  // VDA5050_EXECUTION__EXECUTION_ENGINE_HPP_
+#endif  // VDA5050_EXECUTION__CORE__ENGINE_HPP_
