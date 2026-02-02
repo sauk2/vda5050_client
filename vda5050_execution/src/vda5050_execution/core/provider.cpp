@@ -16,19 +16,29 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/provider.hpp"
+#include "vda5050_execution/core/provider.hpp"
 
 namespace vda5050_execution {
 
+namespace core {
+
 //=============================================================================
-void Provider::push_shared(std::shared_ptr<UpdateBase> update) const
+void Provider::push_shared(std::shared_ptr<UpdateBase> update)
 {
-  auto it = providers_.find(update->get_type());
-  if (it != providers_.end())
+  if (!update) return;
+
+  std::vector<ErasedProvider> targets;
   {
-    auto& cb = it->second;
+    std::lock_guard<std::mutex> lock(registry_mutex_);
+    auto it = providers_.find(update->get_type());
+    if (it != providers_.end()) targets = it->second;
+  }
+
+  for (auto cb : targets)
+  {
     cb(update);
   }
 }
 
+}  // namespace core
 }  // namespace vda5050_execution
