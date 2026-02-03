@@ -53,6 +53,8 @@ void NavigationStrategy::init(std::shared_ptr<core::ContextInterface> context)
   {
     auto engine = this->engine();
 
+    delegate_->set_provider(context->provider());
+
     engine->on<events::NavigationNodeReady>([d = delegate_](auto event) {
       d->on_navigation_node_ready(event->target_node, event->traversal_edge);
     });
