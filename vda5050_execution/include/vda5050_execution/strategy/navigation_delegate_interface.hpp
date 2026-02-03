@@ -38,12 +38,12 @@ public:
   virtual void set_provider(std::shared_ptr<core::Provider> provider) = 0;
 
   virtual void on_navigation_node_ready(
-    std::shared_ptr<const vda5050_types::Node> target_node,
-    std::shared_ptr<const vda5050_types::Edge> traversal_edge) {};
+    std::shared_ptr<const vda5050_types::Node> /*target_node*/,
+    std::shared_ptr<const vda5050_types::Edge> /*traversal_edge*/){};
 
   virtual void on_navigation_segment_ready(
-    std::shared_ptr<const vda5050_types::Node> target_nodes,
-    std::shared_ptr<const vda5050_types::Edge> traversal_edges) {};
+    std::shared_ptr<const vda5050_types::Node> /*target_nodes*/,
+    std::shared_ptr<const vda5050_types::Edge> /*traversal_edges*/){};
 
   virtual void on_navigation_status_change(bool pause = false) = 0;
 
