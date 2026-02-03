@@ -24,6 +24,7 @@
 
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/battery_state.hpp>
+#include <vda5050_types/error.hpp>
 #include <vda5050_types/operating_mode.hpp>
 
 #include "vda5050_execution/core/base.hpp"
@@ -61,6 +62,16 @@ struct OperatingModeData
 
   explicit OperatingModeData(vda5050_types::OperatingMode mode)
   : operating_mode(mode)
+  {
+    // Nothing to do here ...
+  }
+};
+
+struct Errors : public core::Initialize<Errors, core::UpdateBase>
+{
+  std::vector<vda5050_types::Error> errors;
+
+  Errors()
   {
     // Nothing to do here ...
   }
