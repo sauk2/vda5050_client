@@ -17,50 +17,10 @@
  */
 
 #include "vda5050_execution/context/simple_context.hpp"
-#include "vda5050_execution/resources/order_resources.hpp"
-#include "vda5050_execution/updates/navigation_updates.hpp"
-#include "vda5050_execution/updates/state_updates.hpp"
 
 namespace vda5050_execution {
 
 namespace context {
-
-//=============================================================================
-std::shared_ptr<SimpleContext> SimpleContext::make()
-{
-  auto context = std::shared_ptr<SimpleContext>(new SimpleContext());
-  return context;
-}
-
-//=============================================================================
-void SimpleContext::init()
-{
-  auto provider = this->provider();
-
-  provider->on<updates::SequenceAcknowledgement>(
-    [w = weak_from_this()](auto update) {
-      if (auto c = w.lock())
-      {
-        auto order_manager = c->get_resource<resources::OrderManager>();
-        if (order_manager)
-          order_manager->acknowledge_sequence(update->sequence_id);
-      }
-    });
-
-  provider->on<updates::PositionData>([w = weak_from_this()](auto update) {
-    if (auto c = w.lock())
-    {
-      c->add_update(update);
-    }
-  });
-
-  provider->on<updates::BatteryData>([w = weak_from_this()](auto update) {
-    if (auto c = w.lock())
-    {
-      c->add_update(update);
-    }
-  });
-}
 
 //=============================================================================
 void SimpleContext::add_update(std::shared_ptr<core::UpdateBase> update)
@@ -126,12 +86,6 @@ void SimpleContext::clear_all_resources()
 {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   resources_.clear();
-}
-
-//=============================================================================
-SimpleContext::SimpleContext()
-{
-  // Nothing to do here ...
 }
 
 }  // namespace context

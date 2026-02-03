@@ -34,10 +34,6 @@ class SimpleContext : public core::ContextInterface,
                       public std::enable_shared_from_this<SimpleContext>
 {
 public:
-  static std::shared_ptr<SimpleContext> make();
-
-  void init() override;
-
   std::shared_ptr<core::UpdateBase> get_update_raw(
     std::type_index type) const override;
 
@@ -57,8 +53,6 @@ public:
   void clear_all_resources();
 
 private:
-  SimpleContext();
-
   std::unordered_map<std::type_index, std::shared_ptr<core::UpdateBase>>
     updates_;
   mutable std::mutex update_mutex_;
