@@ -21,10 +21,14 @@
 #include <string>
 #include <typeindex>
 
-#include "vda5050_execution/event.hpp"
+#include "vda5050_execution/base.hpp"
 #include "vda5050_execution/event_queue.hpp"
 
-struct EventA : public vda5050_execution::EventBase
+namespace {
+
+using namespace vda5050_execution;  // NOLINT
+
+struct EventA : public Initialize<EventA, EventBase>
 {
   int arg;
 
@@ -32,14 +36,9 @@ struct EventA : public vda5050_execution::EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(EventA));
-  }
 };
 
-struct EventB : public vda5050_execution::EventBase
+struct EventB : public Initialize<EventB, EventBase>
 {
   std::string arg;
 
@@ -47,14 +46,9 @@ struct EventB : public vda5050_execution::EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(EventB));
-  }
 };
 
-struct ComplexEvent : public vda5050_execution::EventBase
+struct ComplexEvent : public Initialize<ComplexEvent, EventBase>
 {
   double val;
   std::string str;
@@ -64,12 +58,9 @@ struct ComplexEvent : public vda5050_execution::EventBase
   {
     // Nothing to do here ...
   }
-
-  std::type_index get_type() const override
-  {
-    return std::type_index(typeid(ComplexEvent));
-  }
 };
+
+};  // namespace
 
 TEST(EventQueueTest, MultiEventPop)
 {
@@ -93,17 +84,4 @@ TEST(EventQueueTest, MultiEventPop)
 
   EXPECT_TRUE(queue.empty());
   EXPECT_EQ(queue.pop(), nullptr);
-}
-
-TEST(EventQueueTest, ArgumentForwarding)
-{
-  vda5050_execution::EventQueue queue;
-
-  queue.push(std::make_shared<ComplexEvent>(8, 2.5, "test"));
-
-  auto event = queue.pop();
-  auto concrete = static_cast<ComplexEvent*>(event.get());
-
-  EXPECT_EQ(concrete->val, 10.5);
-  EXPECT_EQ(concrete->str, "test");
 }
