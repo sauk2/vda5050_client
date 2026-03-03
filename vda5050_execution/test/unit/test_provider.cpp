@@ -18,6 +18,9 @@
 
 #include <gmock/gmock.h>
 
+#include <thread>
+#include <vector>
+
 #include <vda5050_types/agv_position.hpp>
 #include <vda5050_types/battery_state.hpp>
 
@@ -129,4 +132,58 @@ TEST_F(ProviderTest, PushUpdate)
 
   EXPECT_EQ(call_count_1, 2);
   EXPECT_EQ(call_count_2, 1);
+}
+
+TEST_F(ProviderTest, ConcurrentRegistrationAndPush)
+{
+  std::atomic_int total_received = 0;
+  const int num_threads = 10;
+  const int num_thread_updates = 100;
+  std::vector<std::thread> threads;
+
+  for (int i = 0; i < num_threads; i++)
+  {
+    threads.emplace_back([&] {
+      provider->on<MockBatteryStatus>(
+        [&](auto /*update*/) { total_received++; });
+    });
+  }
+
+  for (auto& t : threads) t.join();
+  threads.clear();
+
+  for (int i = 0; i < num_threads; i++)
+  {
+    threads.emplace_back([&] {
+      for (int j = 0; j < num_thread_updates; j++)
+      {
+        provider->push<MockBatteryStatus>(35.8, false);
+      }
+    });
+  }
+
+  for (auto& t : threads) t.join();
+
+  EXPECT_EQ(total_received, num_threads * num_threads * num_thread_updates);
+}
+
+TEST_F(ProviderTest, ConcurrentMultiplePush)
+{
+  const int num_thread_updates = 100;
+  std::atomic_int battery_count = 0;
+  std::atomic_int navigation_count = 0;
+
+  provider->on<MockBatteryStatus>([&](auto /*update*/) { battery_count++; });
+
+  provider->on<MockNavigationStatus>(
+    [&](auto /*update*/) { navigation_count++; });
+
+  auto thread_1 = std::thread([&] {
+    for (int i = 0; i < 100; i++)
+    {
+      provider->push<MockBatteryStatus>(76.3, true);
+    }
+  });
+
+  auto thread_2 = std::thread([&] {});
 }
