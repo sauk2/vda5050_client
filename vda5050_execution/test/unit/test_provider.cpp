@@ -179,11 +179,22 @@ TEST_F(ProviderTest, ConcurrentMultiplePush)
     [&](auto /*update*/) { navigation_count++; });
 
   auto thread_1 = std::thread([&] {
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < num_thread_updates; i++)
     {
       provider->push<MockBatteryStatus>(76.3, true);
     }
   });
 
-  auto thread_2 = std::thread([&] {});
+  auto thread_2 = std::thread([&] {
+    for (int i = 0; i < num_thread_updates; i++)
+    {
+      provider->push<MockNavigationStatus>(2);
+    }
+  });
+
+  thread_1.join();
+  thread_2.join();
+
+  EXPECT_EQ(battery_count, 100);
+  EXPECT_EQ(navigation_count, 100);
 }
