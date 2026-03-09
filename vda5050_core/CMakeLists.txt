@@ -38,12 +38,16 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(client src/vda5050_core/state_manager/state_manager.cpp)
+add_library(client
+  src/vda5050_core/client/state/state_manager.cpp
+  src/vda5050_core/client/order/order_graph_validator.cpp)
 target_link_libraries(client
   vda5050_types::vda5050_types)
 target_include_directories(client
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 add_library(vda5050_core INTERFACE)
 target_link_libraries(vda5050_core
@@ -83,7 +87,7 @@ install(
 )
 
 ament_export_targets(export_vda5050_core HAS_LIBRARY_TARGET)
-ament_export_dependencies(PahoMqttCpp fmt)
+ament_export_dependencies(PahoMqttCpp fmt vda5050_types)
 
 if(BUILD_TESTING)
   include(../cmake/vda5050_lint_common.cmake)
@@ -94,6 +98,7 @@ if(BUILD_TESTING)
     test/unit/mqtt_client/test_mqtt_client_interface.cpp
     test/unit/logger/test_logger.cpp
     test/unit/logger/test_default_logger.cpp
+    test/unit/order_graph_validator/test_order_graph_validator.cpp
     test/unit/state_manager/test_state_manager.cpp
     test/integration/mqtt_client/test_paho_mqtt_client.cpp
   )

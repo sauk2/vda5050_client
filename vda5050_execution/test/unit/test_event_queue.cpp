@@ -19,7 +19,6 @@
 #include <gmock/gmock.h>
 
 #include <string>
-#include <typeindex>
 
 #include "vda5050_execution/base.hpp"
 #include "vda5050_execution/event_queue.hpp"
@@ -60,7 +59,7 @@ struct ComplexEvent : public Initialize<ComplexEvent, EventBase>
   }
 };
 
-};  // namespace
+}  // namespace
 
 TEST(EventQueueTest, MultiEventPop)
 {
