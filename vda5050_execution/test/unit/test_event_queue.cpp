@@ -18,7 +18,9 @@
 
 #include <gmock/gmock.h>
 
+#include <atomic>
 #include <string>
+#include <thread>
 
 #include "vda5050_execution/base.hpp"
 #include "vda5050_execution/event_queue.hpp"
@@ -61,26 +63,115 @@ struct ComplexEvent : public Initialize<ComplexEvent, EventBase>
 
 }  // namespace
 
-TEST(EventQueueTest, MultiEventPop)
+class EventQueueTest : public ::testing::Test
 {
-  vda5050_execution::EventQueue queue;
+protected:
+  std::shared_ptr<vda5050_execution::EventQueue> queue =
+    std::make_shared<vda5050_execution::EventQueue>();
+};
 
-  queue.push(std::make_shared<EventA>(1));
-  queue.push(std::make_shared<EventB>("second"));
-  queue.push(std::make_shared<EventA>(3));
+TEST_F(EventQueueTest, MultiEventPop)
+{
+  queue->push(std::make_shared<EventA>(1));
+  queue->push(std::make_shared<EventB>("second"));
+  queue->push(std::make_shared<EventA>(3));
 
-  auto event_1 = queue.pop();
+  auto event_1 = std::static_pointer_cast<EventA>(queue->pop());
   EXPECT_NE(event_1, nullptr);
-  EXPECT_EQ(static_cast<EventA*>(event_1.get())->arg, 1);
+  EXPECT_EQ(event_1->arg, 1);
 
-  auto event_2 = queue.pop();
+  auto event_2 = std::static_pointer_cast<EventB>(queue->pop());
   EXPECT_NE(event_2, nullptr);
-  EXPECT_EQ(static_cast<EventB*>(event_2.get())->arg, "second");
+  EXPECT_EQ(event_2->arg, "second");
 
-  auto event_3 = queue.pop();
+  auto event_3 = std::static_pointer_cast<EventA>(queue->pop());
   EXPECT_NE(event_3, nullptr);
-  EXPECT_EQ(static_cast<EventA*>(event_3.get())->arg, 3);
+  EXPECT_EQ(event_3->arg, 3);
 
-  EXPECT_TRUE(queue.empty());
-  EXPECT_EQ(queue.pop(), nullptr);
+  EXPECT_TRUE(queue->empty());
+  EXPECT_EQ(queue->pop(), nullptr);
+}
+
+TEST_F(EventQueueTest, PriorityOrdering)
+{
+  queue->push(std::make_shared<EventB>("normal_1"), Priority::NORMAL);
+  queue->push(std::make_shared<EventB>("critical_1"), Priority::CRITICAL);
+  queue->push(std::make_shared<EventB>("normal_2"), Priority::NORMAL);
+
+  auto event_1 = std::static_pointer_cast<EventB>(queue->pop());
+  ASSERT_NE(event_1, nullptr);
+  EXPECT_EQ(event_1->arg, "critical_1");
+
+  auto event_2 = std::static_pointer_cast<EventB>(queue->pop());
+  ASSERT_NE(event_2, nullptr);
+  EXPECT_EQ(event_2->arg, "normal_1");
+
+  auto event_3 = std::static_pointer_cast<EventB>(queue->pop());
+  ASSERT_NE(event_3, nullptr);
+  EXPECT_EQ(event_3->arg, "normal_2");
+}
+
+TEST_F(EventQueueTest, PopCriticalOnly)
+{
+  queue->push(std::make_shared<EventB>("normal"), Priority::NORMAL);
+  queue->push(std::make_shared<EventB>("critical"), Priority::CRITICAL);
+
+  auto event_1 = std::static_pointer_cast<EventB>(queue->pop_critical_only());
+  ASSERT_NE(event_1, nullptr);
+  EXPECT_EQ(event_1->arg, "critical");
+
+  auto event_2 = std::static_pointer_cast<EventB>(queue->pop_critical_only());
+  EXPECT_EQ(event_2, nullptr);
+  EXPECT_FALSE(queue->empty());
+}
+
+TEST_F(EventQueueTest, ClearNormalPreservesCritical)
+{
+  queue->push(std::make_shared<EventA>(1), Priority::NORMAL);
+  queue->push(std::make_shared<EventB>("critical"), Priority::CRITICAL);
+
+  queue->clear_normal();
+
+  EXPECT_FALSE(queue->empty());
+
+  auto event = std::static_pointer_cast<EventB>(queue->pop());
+  EXPECT_EQ(event->arg, "critical");
+  EXPECT_TRUE(queue->empty());
+}
+
+TEST_F(EventQueueTest, NullPush)
+{
+  queue->push(nullptr);
+  EXPECT_TRUE(queue->empty());
+}
+
+TEST_F(EventQueueTest, ConcurrentPushPop)
+{
+  std::atomic_int received_count = 0;
+  int iterations = 100;
+
+  auto producer = std::thread([&]() {
+    for (int i = 0; i < iterations; i++)
+    {
+      queue->push(std::make_shared<EventA>(0));
+    }
+  });
+
+  auto consumer = std::thread([&]() {
+    int count = 0;
+    while (count < iterations)
+    {
+      if (queue->pop())
+      {
+        count++;
+        received_count++;
+      }
+    }
+  });
+
+  producer.join();
+  consumer.join();
+
+  EXPECT_EQ(received_count, iterations);
+  EXPECT_TRUE(queue->empty());
 }

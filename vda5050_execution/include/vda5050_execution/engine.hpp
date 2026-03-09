@@ -99,7 +99,9 @@ public:
   bool waiting() const;
 
 private:
-  void reset_internal_wait_();
+  void reset_internal_wait_() const;
+
+  void check_timeout_() const;
 
   EventQueue event_queue_;
 
@@ -107,9 +109,9 @@ private:
   std::unordered_map<std::type_index, std::vector<ErasedCallback>> callbacks_;
   std::mutex registry_mutex_;
 
-  bool waiting_;
-  std::chrono::steady_clock::time_point wait_timeout_;
-  std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_;
+  mutable bool waiting_;
+  mutable std::chrono::steady_clock::time_point wait_timeout_;
+  mutable std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_;
   mutable std::mutex wait_mutex_;
 };
 

@@ -18,6 +18,9 @@
 
 #include <gmock/gmock.h>
 
+#include <atomic>
+#include <thread>
+
 #include <vda5050_types/edge.hpp>
 #include <vda5050_types/node.hpp>
 
@@ -45,6 +48,18 @@ struct MockNavigationCommand
   }
 };
 
+struct MockNavigationAcknowledgement
+: public Initialize<MockNavigationAcknowledgement, UpdateBase>
+{
+  std::string node_id;
+
+  explicit MockNavigationAcknowledgement(const std::string& node_id)
+  : node_id(node_id)
+  {
+    // Nothing to do here ...
+  }
+};
+
 struct MockActionCommand : public Initialize<MockActionCommand, EventBase>
 {
   std::string action_name;
@@ -60,7 +75,7 @@ struct MockActionCommand : public Initialize<MockActionCommand, EventBase>
   }
 };
 
-};  // namespace
+}  // namespace
 
 class EngineTest : public ::testing::Test
 {
@@ -162,4 +177,92 @@ TEST_F(EngineTest, DispatchEvent)
 
   EXPECT_EQ(call_count_1, 1);
   EXPECT_EQ(call_count_2, 1);
+}
+
+TEST_F(EngineTest, PriorityProcessing)
+{
+  std::vector<std::string> execution_order;
+
+  engine->on<MockNavigationCommand>(
+    [&](auto event) { execution_order.push_back(event->node_id); });
+
+  engine->emit<MockNavigationCommand>(Priority::NORMAL, "node_2");
+  engine->emit<MockNavigationCommand>(Priority::CRITICAL, "node_charging");
+
+  engine->step();
+  engine->step();
+
+  ASSERT_EQ(execution_order.size(), 2);
+  EXPECT_EQ(execution_order[0], "node_charging");
+  EXPECT_EQ(execution_order[1], "node_2");
+}
+
+TEST_F(EngineTest, WaitConditionSucess)
+{
+  engine->wait_for<MockNavigationAcknowledgement>(
+    std::chrono::milliseconds(1000),
+    [](auto update) { return update->node_id == "node_3"; });
+
+  EXPECT_TRUE(engine->waiting());
+
+  engine->notify(std::make_shared<MockNavigationAcknowledgement>("node_2"));
+  EXPECT_TRUE(engine->waiting());
+
+  engine->notify(std::make_shared<MockNavigationAcknowledgement>("node_3"));
+  EXPECT_FALSE(engine->waiting());
+}
+
+TEST_F(EngineTest, WaitTimeout)
+{
+  std::vector<std::string> execution_log;
+
+  engine->on<MockNavigationCommand>(
+    [&](auto event) { execution_log.push_back(event->node_id); });
+
+  engine->emit<MockNavigationCommand>(Priority::NORMAL, "node_delayed");
+
+  engine->wait_for<MockNavigationAcknowledgement>(
+    std::chrono::milliseconds(10));
+  EXPECT_TRUE(engine->waiting());
+
+  engine->step();
+  EXPECT_TRUE(execution_log.empty());
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+  EXPECT_FALSE(engine->waiting());
+
+  engine->step();
+  ASSERT_EQ(execution_log.size(), 1);
+  EXPECT_EQ(execution_log[0], "node_delayed");
+}
+
+TEST_F(EngineTest, ConcurrentEmitAndStep)
+{
+  std::atomic_int processed_count = 0;
+  const int steps = 500;
+
+  engine->on<MockNavigationCommand>([&](auto /*event*/) { processed_count++; });
+
+  auto emitter = std::thread([&]() {
+    for (int i = 0; i < 500; i++)
+    {
+      engine->emit<MockNavigationCommand>(Priority::NORMAL, std::to_string(i));
+    }
+  });
+
+  auto stepper = std::thread([&]() {
+    for (int i = 0; i < 500; i++)
+    {
+      engine->step();
+      std::this_thread::yield();
+    }
+  });
+
+  emitter.join();
+  stepper.join();
+
+  while (processed_count < steps) engine->step();
+
+  EXPECT_EQ(processed_count, 500);
 }

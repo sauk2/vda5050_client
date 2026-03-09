@@ -39,15 +39,10 @@ void Engine::notify(std::shared_ptr<UpdateBase> update)
 //=============================================================================
 void Engine::step()
 {
-  {
-    std::lock_guard<std::mutex> lock(wait_mutex_);
-    if (waiting_ && std::chrono::steady_clock::now() > wait_timeout_)
-      reset_internal_wait_();
-  }
-
   std::shared_ptr<EventBase> event;
   {
     std::lock_guard<std::mutex> lock(wait_mutex_);
+    check_timeout_();
     event = waiting_ ? event_queue_.pop_critical_only() : event_queue_.pop();
   }
 
@@ -70,15 +65,22 @@ void Engine::step()
 bool Engine::waiting() const
 {
   std::lock_guard<std::mutex> lock(wait_mutex_);
+  check_timeout_();
   return waiting_;
 }
 
 //=============================================================================
-void Engine::reset_internal_wait_()
+void Engine::reset_internal_wait_() const
 {
-  std::lock_guard<std::mutex> lock(wait_mutex_);
   waiting_ = false;
   wait_predicate_ = nullptr;
+}
+
+//=============================================================================
+void Engine::check_timeout_() const
+{
+  if (waiting_ && std::chrono::steady_clock::now() > wait_timeout_)
+    reset_internal_wait_();
 }
 
 }  // namespace vda5050_execution
