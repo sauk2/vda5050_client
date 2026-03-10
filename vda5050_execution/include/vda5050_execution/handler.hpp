@@ -79,7 +79,7 @@ private:
   {
     context_->init();
 
-    context->on_change([&] { wake(); });
+    context_->on_change([&] { wake(); });
 
     (add_strategy(strategies), ...);
   }
