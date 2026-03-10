@@ -68,6 +68,11 @@ void Handler::spin(std::chrono::milliseconds timeout)
 //=============================================================================
 void Handler::spin_once()
 {
+  {
+    std::lock_guard<std::mutex> lock(sync_mutex_);
+    needs_processing_ = false;
+  }
+
   std::vector<std::shared_ptr<StrategyInterface>> active_strategies;
   {
     std::lock_guard<std::mutex> lock(strategy_mutex_);
