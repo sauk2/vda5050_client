@@ -54,7 +54,7 @@ public:
       std::lock_guard<std::mutex> lock(notify_mutex_);
       callback = change_callback_;
     }
-    if (change_callback_) change_callback_();
+    if (callback) callback();
   }
 
   template <typename UpdateT>
