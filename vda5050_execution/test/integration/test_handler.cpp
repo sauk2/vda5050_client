@@ -15,3 +15,218 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <gmock/gmock.h>
+
+#include <atomic>
+#include <thread>
+
+#include "vda5050_execution/base.hpp"
+#include "vda5050_execution/context_interface.hpp"
+#include "vda5050_execution/handler.hpp"
+#include "vda5050_execution/strategy_interface.hpp"
+
+namespace {
+
+using namespace vda5050_execution;  // NOLINT
+
+class MockContext : public ContextInterface
+{
+public:
+  int init_calls = 0;
+
+  void init() override
+  {
+    init_calls++;
+  }
+
+  std::shared_ptr<UpdateBase> get_update_raw(
+    std::type_index /*type*/) const override
+  {
+    return nullptr;
+  }
+
+  std::shared_ptr<ResourceBase> get_resource_raw(
+    std::type_index /*type*/) const override
+  {
+    return nullptr;
+  }
+};
+
+class MockStrategy : public StrategyInterface
+{
+public:
+  int init_calls = 0;
+  int step_calls = 0;
+
+  void init(std::shared_ptr<ContextInterface> /*context*/) override
+  {
+    init_calls++;
+  }
+
+  void step(std::shared_ptr<ContextInterface> /*context*/) override
+  {
+    step_calls++;
+  }
+};
+
+}  // namespace
+
+TEST(HandlerTest, SpinOnceRunsStrategy)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context, strategy);
+  EXPECT_EQ(strategy->init_calls, 1);
+  EXPECT_EQ(context->init_calls, 1);
+
+  handler->spin_once();
+  EXPECT_EQ(strategy->step_calls, 1);
+}
+
+TEST(HandlerTest, InitAndRemoveStrategies)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy_1 = std::make_shared<MockStrategy>();
+  auto strategy_2 = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context, strategy_1, strategy_2);
+  EXPECT_EQ(strategy_1->init_calls, 1);
+  EXPECT_EQ(strategy_2->init_calls, 1);
+  EXPECT_EQ(context->init_calls, 1);
+
+  handler->remove_strategy_by_type<MockStrategy>();
+  handler->spin_once();
+
+  EXPECT_EQ(strategy_1->step_calls, 0);
+  EXPECT_EQ(strategy_2->step_calls, 0);
+}
+
+TEST(HandlerTest, AddAndRemoveStrategy)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context);
+
+  handler->add_strategy(strategy);
+  EXPECT_EQ(strategy->init_calls, 1);
+
+  handler->spin_once();
+  EXPECT_EQ(strategy->step_calls, 1);
+
+  handler->remove_strategy(strategy);
+  handler->spin_once();
+  EXPECT_EQ(strategy->step_calls, 1);
+}
+
+TEST(HandlerTest, SpinInThread)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context, strategy);
+
+  std::atomic_bool thread_running = false;
+  auto spin_thread = std::thread([&] {
+    thread_running = true;
+    handler->spin(std::chrono::milliseconds(100));
+  });
+
+  while (!thread_running) std::this_thread::yield();
+
+  EXPECT_EQ(strategy->step_calls, 0);
+  handler->wake();
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  EXPECT_GE(strategy->step_calls, 1);
+
+  handler->stop();
+  handler->wake();
+  if (spin_thread.joinable()) spin_thread.join();
+}
+
+TEST(HandlerTest, ConcurrentStrategyModification)
+{
+  auto context = std::make_shared<MockContext>();
+  auto handler = Handler::make(context);
+
+  std::atomic_bool keep_running = true;
+
+  auto spin_thread = std::thread([&] {
+    while (keep_running) handler->spin_once();
+  });
+
+  auto modifying_thread = std::thread([&] {
+    for (int i = 0; i < 100; i++)
+    {
+      auto strategy = std::make_shared<MockStrategy>();
+      handler->add_strategy(strategy);
+      handler->remove_strategy(strategy);
+    }
+    keep_running = false;
+  });
+
+  modifying_thread.join();
+  spin_thread.join();
+  SUCCEED();
+}
+
+TEST(HandlerTest, SpinAndSpinOnceSimultaneously)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context, strategy);
+
+  std::atomic_bool thread_running = false;
+  auto spin_thread = std::thread([&] {
+    thread_running = true;
+    handler->spin(std::chrono::milliseconds(100));
+  });
+
+  while (!thread_running) std::this_thread::yield();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  EXPECT_EQ(strategy->step_calls, 1);
+
+  handler->spin_once();
+  EXPECT_EQ(strategy->step_calls, 2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  EXPECT_EQ(strategy->step_calls, 2);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  EXPECT_GE(strategy->step_calls, 3);
+
+  handler->stop();
+  handler->wake();
+  if (spin_thread.joinable()) spin_thread.join();
+}
+
+TEST(HandlerTest, WakeWithContext)
+{
+  auto context = std::make_shared<MockContext>();
+  auto strategy = std::make_shared<MockStrategy>();
+
+  auto handler = Handler::make(context, strategy);
+
+  std::atomic_bool thread_running = false;
+  auto spin_thread = std::thread([&] {
+    thread_running = true;
+    handler->spin(std::chrono::milliseconds(100));
+  });
+
+  while (!thread_running) std::this_thread::yield();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  EXPECT_EQ(strategy->step_calls, 1);
+
+  context->notify();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  EXPECT_EQ(strategy->step_calls, 2);
+
+  handler->stop();
+  handler->wake();
+  if (spin_thread.joinable()) spin_thread.join();
+}
