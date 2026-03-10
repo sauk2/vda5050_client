@@ -136,10 +136,12 @@ TEST(HandlerTest, SpinInThread)
 
   while (!thread_running) std::this_thread::yield();
 
-  EXPECT_EQ(strategy->step_calls, 0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  EXPECT_EQ(strategy->step_calls, 1);
+
   handler->wake();
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  EXPECT_GE(strategy->step_calls, 1);
+  EXPECT_GE(strategy->step_calls, 2);
 
   handler->stop();
   handler->wake();
