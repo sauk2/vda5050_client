@@ -33,7 +33,7 @@ using namespace vda5050_execution;  // NOLINT
 class MockContext : public ContextInterface
 {
 public:
-  int init_calls = 0;
+  std::atomic_int init_calls = 0;
 
   void init() override
   {
@@ -56,8 +56,8 @@ public:
 class MockStrategy : public StrategyInterface
 {
 public:
-  int init_calls = 0;
-  int step_calls = 0;
+  std::atomic_int init_calls = 0;
+  std::atomic_int step_calls = 0;
 
   void init(std::shared_ptr<ContextInterface> /*context*/) override
   {
