@@ -32,6 +32,15 @@ target_include_directories(vda5050_execution
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+add_executable(custom_base examples/custom_base.cpp)
+target_link_libraries(custom_base PUBLIC vda5050_execution)
+
+add_executable(provider_example examples/provider_example.cpp)
+target_link_libraries(provider_example PUBLIC vda5050_execution)
+
+add_executable(engine_example examples/engine_example.cpp)
+target_link_libraries(engine_example PUBLIC vda5050_execution)
+
 install(
   DIRECTORY include/vda5050_execution
   DESTINATION include
@@ -50,6 +59,24 @@ install(
   EXPORT export_vda5050_execution
   DESTINATION share/${PROJECT_NAME}/cmake
   NAMESPACE vda5050_execution::
+)
+
+install(
+  TARGETS custom_base
+  EXPORT custom_base
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS provider_example
+  EXPORT provider_example
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS engine_example
+  EXPORT engine_example
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_export_targets(export_vda5050_execution HAS_LIBRARY_TARGET)
