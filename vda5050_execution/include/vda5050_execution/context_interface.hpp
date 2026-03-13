@@ -47,7 +47,7 @@ public:
     change_callback_ = std::move(callback);
   }
 
-  void notify()
+  void notify_on_change()
   {
     std::function<void()> callback;
     {
