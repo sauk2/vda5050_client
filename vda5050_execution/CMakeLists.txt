@@ -41,6 +41,9 @@ target_link_libraries(provider_example PUBLIC vda5050_execution)
 add_executable(engine_example examples/engine_example.cpp)
 target_link_libraries(engine_example PUBLIC vda5050_execution)
 
+add_executable(handler_integration examples/handler_integration.cpp)
+target_link_libraries(handler_integration PUBLIC vda5050_execution)
+
 install(
   DIRECTORY include/vda5050_execution
   DESTINATION include
@@ -76,6 +79,12 @@ install(
 install(
   TARGETS engine_example
   EXPORT engine_example
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS handler_integration
+  EXPORT handler_integration
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
