@@ -223,7 +223,7 @@ TEST(HandlerTest, WakeWithContext)
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
   EXPECT_EQ(strategy->step_calls, 1);
 
-  context->notify();
+  context->notify_on_change();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
   EXPECT_EQ(strategy->step_calls, 2);
