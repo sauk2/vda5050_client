@@ -112,8 +112,7 @@ protected:
   }
 
 private:
-  mutable std::unordered_map<std::type_index, std::shared_ptr<UpdateBase>>
-    updates_;
+  std::unordered_map<std::type_index, std::shared_ptr<UpdateBase>> updates_;
   mutable std::mutex update_mutex_;
 
   std::unordered_map<std::type_index, std::shared_ptr<ResourceBase>> resources_;
