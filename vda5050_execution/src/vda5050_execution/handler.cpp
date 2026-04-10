@@ -16,9 +16,26 @@
  * limitations under the License.
  */
 
+#include <utility>
+
 #include "vda5050_execution/handler.hpp"
 
 namespace vda5050_execution {
+
+//=============================================================================
+Handler::~Handler()
+{
+  stop();
+}
+
+//=============================================================================
+std::shared_ptr<Handler> Handler::make(
+  std::shared_ptr<ContextInterface> context,
+  std::vector<std::shared_ptr<StrategyInterface>> strategies)
+{
+  auto handler = std::shared_ptr<Handler>(new Handler(context, strategies));
+  return handler;
+}
 
 //=============================================================================
 void Handler::add_strategy(std::shared_ptr<StrategyInterface> strategy)
@@ -26,6 +43,10 @@ void Handler::add_strategy(std::shared_ptr<StrategyInterface> strategy)
   if (!strategy) return;
 
   std::lock_guard<std::mutex> lock(strategy_mutex_);
+  if (
+    std::find(strategies_.begin(), strategies_.end(), strategy) !=
+    strategies_.end())
+    return;
   strategies_.push_back(strategy);
   strategy->init(context_);
 }
@@ -42,7 +63,6 @@ void Handler::remove_strategy(std::shared_ptr<StrategyInterface> strategy)
 void Handler::wake()
 {
   std::lock_guard<std::mutex> lock(sync_mutex_);
-  needs_processing_ = true;
   cv_.notify_all();
 }
 
@@ -54,11 +74,10 @@ void Handler::spin(std::chrono::milliseconds timeout)
   while (running_)
   {
     std::unique_lock lock(sync_mutex_);
-    cv_.wait_for(lock, timeout, [&] { return needs_processing_ || !running_; });
+    cv_.wait_for(lock, timeout);
 
     if (!running_) break;
 
-    needs_processing_ = false;
     lock.unlock();
 
     spin_once();
@@ -68,11 +87,6 @@ void Handler::spin(std::chrono::milliseconds timeout)
 //=============================================================================
 void Handler::spin_once()
 {
-  {
-    std::lock_guard<std::mutex> lock(sync_mutex_);
-    needs_processing_ = false;
-  }
-
   std::vector<std::shared_ptr<StrategyInterface>> active_strategies;
   {
     std::lock_guard<std::mutex> lock(strategy_mutex_);
@@ -94,7 +108,26 @@ bool Handler::running()
 //=============================================================================
 void Handler::stop()
 {
-  running_ = false;
+  if (running_)
+  {
+    running_ = false;
+    wake();
+  }
+}
+
+//=============================================================================
+Handler::Handler(
+  std::shared_ptr<ContextInterface> context,
+  std::vector<std::shared_ptr<StrategyInterface>> strategies)
+: context_(std::move(context)), running_(false)
+{
+  context_->init();
+
+  context_->on_change([&] { wake(); });
+
+  for (auto strategy : strategies) add_strategy(strategy);
+
+  spin_once();
 }
 
 }  // namespace vda5050_execution

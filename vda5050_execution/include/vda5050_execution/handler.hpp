@@ -22,7 +22,6 @@
 #include <atomic>
 #include <condition_variable>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "vda5050_execution/context_interface.hpp"
@@ -33,15 +32,11 @@ namespace vda5050_execution {
 class Handler : public std::enable_shared_from_this<Handler>
 {
 public:
-  template <typename... Strategies>
+  ~Handler();
+
   static std::shared_ptr<Handler> make(
     std::shared_ptr<ContextInterface> context,
-    std::shared_ptr<Strategies>... strategies)
-  {
-    auto handler =
-      std::shared_ptr<Handler>(new Handler(context, strategies...));
-    return handler;
-  }
+    std::vector<std::shared_ptr<StrategyInterface>> strategies = {});
 
   void add_strategy(std::shared_ptr<StrategyInterface> strategy);
 
@@ -71,18 +66,9 @@ public:
   void stop();
 
 private:
-  template <typename... Strategies>
   Handler(
     std::shared_ptr<ContextInterface> context,
-    std::shared_ptr<Strategies>... strategies)
-  : context_(std::move(context)), running_(false), needs_processing_(true)
-  {
-    context_->init();
-
-    context_->on_change([&] { wake(); });
-
-    (add_strategy(strategies), ...);
-  }
+    std::vector<std::shared_ptr<StrategyInterface>> strategies);
 
   std::shared_ptr<ContextInterface> context_;
 
@@ -91,7 +77,6 @@ private:
 
   std::atomic_bool running_;
 
-  std::atomic_bool needs_processing_;
   std::condition_variable cv_;
   std::mutex sync_mutex_;
 };
