@@ -66,7 +66,7 @@ public:
   }
 
   template <typename UpdateT>
-  void wait_for(
+  void suspend_till(
     std::chrono::milliseconds timeout,
     std::function<bool(std::shared_ptr<UpdateT>)> predicate = nullptr)
   {
