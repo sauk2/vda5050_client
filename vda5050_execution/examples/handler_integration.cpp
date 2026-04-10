@@ -163,7 +163,7 @@ public:
 
         engine()->step();
 
-        engine()->wait_for<OrderUpdate>(
+        engine()->suspend_till<OrderUpdate>(
           std::chrono::seconds(5), [](auto update) {
             return update->order_id == "order_1" && update->sequence_id == 2;
           });
