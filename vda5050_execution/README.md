@@ -130,7 +130,7 @@ updates without blocking other system components.
           engine()->step();
 
           // Pause the strategy until appropriate update arrives
-          engine()->wait_for<OrderUpdate>(
+          engine()->suspend_till<OrderUpdate>(
             std::chrono::seconds(5), [](auto update) {
               return update->order_id == "order_1" && update->sequence_id == 2;
             });
