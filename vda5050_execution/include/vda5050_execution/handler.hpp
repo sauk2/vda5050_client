@@ -45,7 +45,7 @@ public:
   template <typename StrategyT>
   void remove_strategy_by_type()
   {
-    std::lock_guard<std::mutex> lock(strategy_mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     strategies_.erase(
       std::remove_if(
         strategies_.begin(), strategies_.end(),
@@ -61,6 +61,8 @@ public:
 
   void spin_once();
 
+  std::vector<std::shared_ptr<StrategyInterface>> get_active_strategies();
+
   bool running();
 
   void stop();
@@ -70,15 +72,16 @@ private:
     std::shared_ptr<ContextInterface> context,
     std::vector<std::shared_ptr<StrategyInterface>> strategies);
 
+  void step_active_strategies_();
+
   std::shared_ptr<ContextInterface> context_;
 
   std::vector<std::shared_ptr<StrategyInterface>> strategies_;
-  std::mutex strategy_mutex_;
 
   std::atomic_bool running_;
 
   std::condition_variable cv_;
-  std::mutex sync_mutex_;
+  std::mutex mutex_;
 };
 
 }  // namespace vda5050_execution

@@ -42,7 +42,7 @@ void Handler::add_strategy(std::shared_ptr<StrategyInterface> strategy)
 {
   if (!strategy) return;
 
-  std::lock_guard<std::mutex> lock(strategy_mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   if (
     std::find(strategies_.begin(), strategies_.end(), strategy) !=
     strategies_.end())
@@ -54,7 +54,7 @@ void Handler::add_strategy(std::shared_ptr<StrategyInterface> strategy)
 //=============================================================================
 void Handler::remove_strategy(std::shared_ptr<StrategyInterface> strategy)
 {
-  std::lock_guard<std::mutex> lock(strategy_mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   auto it = std::find(strategies_.begin(), strategies_.end(), strategy);
   if (it != strategies_.end()) strategies_.erase(it);
 }
@@ -62,7 +62,7 @@ void Handler::remove_strategy(std::shared_ptr<StrategyInterface> strategy)
 //=============================================================================
 void Handler::wake()
 {
-  std::lock_guard<std::mutex> lock(sync_mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   cv_.notify_all();
 }
 
@@ -73,30 +73,28 @@ void Handler::spin(std::chrono::milliseconds timeout)
 
   while (running_)
   {
-    std::unique_lock lock(sync_mutex_);
+    std::unique_lock lock(mutex_);
     cv_.wait_for(lock, timeout);
 
     if (!running_) break;
 
     lock.unlock();
 
-    spin_once();
+    step_active_strategies_();
   }
 }
 
 //=============================================================================
 void Handler::spin_once()
 {
-  std::vector<std::shared_ptr<StrategyInterface>> active_strategies;
-  {
-    std::lock_guard<std::mutex> lock(strategy_mutex_);
-    active_strategies = strategies_;
-  }
+  step_active_strategies_();
+}
 
-  for (auto& strategy : active_strategies)
-  {
-    strategy->step(context_);
-  }
+//=============================================================================
+std::vector<std::shared_ptr<StrategyInterface>> Handler::get_active_strategies()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  return strategies_;
 }
 
 //=============================================================================
@@ -128,6 +126,17 @@ Handler::Handler(
   for (auto strategy : strategies) add_strategy(strategy);
 
   spin_once();
+}
+
+//=============================================================================
+void Handler::step_active_strategies_()
+{
+  auto active_strategies = get_active_strategies();
+
+  for (auto& strategy : active_strategies)
+  {
+    strategy->step(context_);
+  }
 }
 
 }  // namespace vda5050_execution
