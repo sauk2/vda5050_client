@@ -260,11 +260,10 @@ TEST(HandlerTest, DestructionStopsSpin)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     EXPECT_EQ(strategy->step_calls, 1);
-
-    spin_thread.detach();
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  EXPECT_FALSE(spin_thread.joinable());
   EXPECT_EQ(strategy->step_calls, 1);
+
+  if (spin_thread.joinable()) spin_thread.join();
 }
