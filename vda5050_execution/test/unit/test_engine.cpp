@@ -199,7 +199,7 @@ TEST_F(EngineTest, PriorityProcessing)
 
 TEST_F(EngineTest, WaitConditionSucess)
 {
-  engine->wait_for<MockNavigationAcknowledgement>(
+  engine->suspend_till<MockNavigationAcknowledgement>(
     std::chrono::milliseconds(1000),
     [](auto update) { return update->node_id == "node_3"; });
 
@@ -221,7 +221,7 @@ TEST_F(EngineTest, WaitTimeout)
 
   engine->emit<MockNavigationCommand>(Priority::NORMAL, "node_delayed");
 
-  engine->wait_for<MockNavigationAcknowledgement>(
+  engine->suspend_till<MockNavigationAcknowledgement>(
     std::chrono::milliseconds(10));
   EXPECT_TRUE(engine->waiting());
 
