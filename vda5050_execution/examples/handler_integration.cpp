@@ -176,7 +176,9 @@ int main()
 {
   auto context = std::make_shared<SimpleContext>();
   auto strategy = std::make_shared<OrderDispatchStrategy>();
-  auto handler = Handler::make(context, strategy);
+  std::vector<std::shared_ptr<vda5050_execution::StrategyInterface>>
+    strategies = {strategy};
+  auto handler = Handler::make(context, strategies);
 
   VDA5050_INFO("Stage 1: Triggering Sequence 1 ...");
   context->provider()->push<OrderUpdate>("order_1", 1);
