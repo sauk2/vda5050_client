@@ -65,7 +65,7 @@ int main()
 
   VDA5050_INFO("Stage 2: Wait For Update ...");
 
-  engine->suspend_till<SensorData>(
+  engine->suspend_for<SensorData>(
     std::chrono::seconds(2),
     [](auto update) -> bool { return update->value >= 10.0; });
 
