@@ -239,31 +239,3 @@ TEST(HandlerTest, WakeWithContext)
   handler->wake();
   if (spin_thread.joinable()) spin_thread.join();
 }
-
-TEST(HandlerTest, DestructionStopsSpin)
-{
-  auto context = std::make_shared<MockContext>();
-  auto strategy = std::make_shared<MockStrategy>();
-  std::vector<std::shared_ptr<StrategyInterface>> strategies = {strategy};
-
-  std::thread spin_thread;
-  {
-    auto handler = Handler::make(context, strategies);
-
-    std::atomic_bool thread_running = false;
-    spin_thread = std::thread([&] {
-      thread_running = true;
-      handler->spin(std::chrono::milliseconds(30));
-    });
-
-    while (!thread_running) std::this_thread::yield();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    EXPECT_EQ(strategy->step_calls, 1);
-  }
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  EXPECT_EQ(strategy->step_calls, 1);
-
-  if (spin_thread.joinable()) spin_thread.join();
-}

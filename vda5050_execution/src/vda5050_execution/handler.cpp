@@ -23,12 +23,6 @@
 namespace vda5050_execution {
 
 //=============================================================================
-Handler::~Handler()
-{
-  stop();
-}
-
-//=============================================================================
 std::shared_ptr<Handler> Handler::make(
   std::shared_ptr<ContextInterface> context,
   std::vector<std::shared_ptr<StrategyInterface>> strategies)
@@ -62,6 +56,8 @@ void Handler::remove_strategy(std::shared_ptr<StrategyInterface> strategy)
 //=============================================================================
 void Handler::wake()
 {
+  if (!spinning_) return;
+
   std::lock_guard<std::mutex> lock(mutex_);
   cv_.notify_all();
 }
@@ -70,6 +66,7 @@ void Handler::wake()
 void Handler::spin(std::chrono::milliseconds timeout)
 {
   running_ = true;
+  spinning_ = true;
 
   while (running_)
   {
@@ -80,14 +77,16 @@ void Handler::spin(std::chrono::milliseconds timeout)
 
     lock.unlock();
 
-    step_active_strategies_();
+    step_active_strategies();
   }
+
+  spinning_ = false;
 }
 
 //=============================================================================
 void Handler::spin_once()
 {
-  step_active_strategies_();
+  step_active_strategies();
 }
 
 //=============================================================================
@@ -111,13 +110,15 @@ void Handler::stop()
     running_ = false;
     wake();
   }
+
+  while (spinning_) continue;
 }
 
 //=============================================================================
 Handler::Handler(
   std::shared_ptr<ContextInterface> context,
   std::vector<std::shared_ptr<StrategyInterface>> strategies)
-: context_(std::move(context)), running_(false)
+: context_(std::move(context)), running_(false), spinning_(false)
 {
   context_->init();
 
@@ -129,7 +130,7 @@ Handler::Handler(
 }
 
 //=============================================================================
-void Handler::step_active_strategies_()
+void Handler::step_active_strategies()
 {
   auto active_strategies = get_active_strategies();
 

@@ -32,8 +32,6 @@ namespace vda5050_execution {
 class Handler : public std::enable_shared_from_this<Handler>
 {
 public:
-  ~Handler();
-
   static std::shared_ptr<Handler> make(
     std::shared_ptr<ContextInterface> context,
     std::vector<std::shared_ptr<StrategyInterface>> strategies = {});
@@ -72,13 +70,14 @@ private:
     std::shared_ptr<ContextInterface> context,
     std::vector<std::shared_ptr<StrategyInterface>> strategies);
 
-  void step_active_strategies_();
+  void step_active_strategies();
 
   std::shared_ptr<ContextInterface> context_;
 
   std::vector<std::shared_ptr<StrategyInterface>> strategies_;
 
   std::atomic_bool running_;
+  std::atomic_bool spinning_;
 
   std::condition_variable cv_;
   std::mutex mutex_;
