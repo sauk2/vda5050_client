@@ -34,7 +34,7 @@ class Handler : public std::enable_shared_from_this<Handler>
 public:
   static std::shared_ptr<Handler> make(
     std::shared_ptr<ContextInterface> context,
-    std::vector<std::shared_ptr<StrategyInterface>> strategies = {});
+    const std::vector<std::shared_ptr<StrategyInterface>>& strategies = {});
 
   void add_strategy(std::shared_ptr<StrategyInterface> strategy);
 

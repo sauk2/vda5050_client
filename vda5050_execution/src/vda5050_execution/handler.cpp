@@ -25,7 +25,7 @@ namespace vda5050_execution {
 //=============================================================================
 std::shared_ptr<Handler> Handler::make(
   std::shared_ptr<ContextInterface> context,
-  std::vector<std::shared_ptr<StrategyInterface>> strategies)
+  const std::vector<std::shared_ptr<StrategyInterface>>& strategies)
 {
   auto handler = std::shared_ptr<Handler>(new Handler(context, strategies));
   return handler;
