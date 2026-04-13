@@ -66,7 +66,7 @@ public:
   }
 
   template <typename UpdateT>
-  void suspend_till(
+  void suspend_for(
     std::chrono::milliseconds timeout,
     std::function<bool(std::shared_ptr<UpdateT>)> predicate = nullptr)
   {
@@ -99,9 +99,9 @@ public:
   bool waiting() const;
 
 private:
-  void reset_internal_wait_() const;
+  void reset_internal_wait() const;
 
-  void check_timeout_() const;
+  void check_timeout() const;
 
   EventQueue event_queue_;
 
