@@ -16,26 +16,39 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/provider.hpp"
+#ifndef VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_
+#define VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_
+
+#include <memory>
+
+#include "vda5050_execution/context_interface.hpp"
+#include "vda5050_execution/engine.hpp"
 
 namespace vda5050_execution {
 
-//=============================================================================
-void Provider::push_shared(std::shared_ptr<UpdateBase> update)
+class StrategyInterface
 {
-  if (!update) return;
-
-  std::vector<ErasedProvider> targets;
+public:
+  StrategyInterface() : engine_(std::make_shared<Engine>())
   {
-    std::lock_guard<std::mutex> lock(registry_mutex_);
-    auto it = providers_.find(update->get_type());
-    if (it != providers_.end()) targets = it->second;
+    // Nothing to do here ...
   }
 
-  for (auto cb : targets)
+  virtual ~StrategyInterface() = default;
+
+  virtual void init(std::shared_ptr<ContextInterface> context) = 0;
+
+  virtual void step(std::shared_ptr<ContextInterface> context) = 0;
+
+  std::shared_ptr<Engine> engine()
   {
-    cb(update);
+    return engine_;
   }
-}
+
+private:
+  std::shared_ptr<Engine> engine_;
+};
 
 }  // namespace vda5050_execution
+
+#endif  // VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_

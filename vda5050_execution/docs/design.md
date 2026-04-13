@@ -7,31 +7,69 @@ commands.
 
 ## Overall Architecture
 
-The package is structured as an asynchronous event-driven system. It separates
-communication from execution logic by using a producer-consumer model centered
-around a synchronized event queue and a type-erased callback registry.
+The system follows a Reactive Strategy Pattern by separating the Strategy
+(logic to be executed) from the Handler (orchestration for the logic) and
+the Context (data storage of the system).
 
-The high-level flow of message looks as follows,
+Design Principles:
 
-1. Message Translation: The `ProtocolAdapter` receives an MQTT payload which is
-deserialized into concrete `vda5050_types` structs.
+1. Stateful Context: Instead of transient stream of messages, the system
+maintains a snapshot.
 
-2. Event Dispatch: The translated message is wrapped into an `Event` object and
-passed to the `EventQueue` through an `ExecutionEngine`.
+2. Reactive Execution: The system sleeps when idle and wakes up only when
+new data arrives or timeout occurs.
 
-3. Buffering: The `EventQueue` holds events in a thread-safe FIFO buffer
-allowing other threads to return to their specific tasks.
-
-4. Logic Processing: The `ExecutionEngine` is stepped in a continuous loop in a
-dedicated thread. It pops events from the queue and checks the
-`CallbackRegistry` to find the associated logic.
-
-5. Feedback: As the execution progresses, the state changes can be reported by
-pushing `Update` objects back through the `Provider`.
+3. Non-Blocking Logic: Strategies use an internal Engine to manage log running
+tasks using asynchronous events dispatch and wait-conditions.
 
 ## Core Components
 
-### 1. `ProtocolAdapter`
+### 1. Data Layer (`UpdateBase`, `ResourceBase`, `Provider`, `Context`)
+
+This layer manages the upstream and inbound flow of information.
+
+- `UpdateBase`: It is a lightweight carrier of external data representing
+external information entering the system (e.g., an order update from the AGV)
+
+- `ResourceBase`: It is a carrier of persistent data. Unlike Updates,
+Resources are typically cached in the Context (e.g., storage for the MQTT
+client)
+
+- `Provider`: It can be used to register callbacks for asynchronous broadcast
+of data to registered entities.
+
+- `Context`: It is the systems persistent storage that canbe queried by the
+orchestration entities to understand the state of the system before making
+decisions.
+
+### 2. Logic Layer (`EventBase`, `Strategy`, `Engine`)
+
+This layer manages the downstream and internal flow of commands.
+
+- `EventBase`: It is a lightweight carrier of commands that are emitted by a
+Strategy when it decides the registered entities must do something (e.g.,
+motor actuation, navigation, etc.)
+
+- `Strategy`: It evaluates the Updates and Resources found in the Context
+and decides which internal Events to emit to the Engine.
+
+- `Engine`: The Strategy's local executor. It manages an Event Queue that
+prioritizes and then dispatches internal commands. It also handles Wait
+Mechanisms, allowing Strategy to pause until an Update satisfies a
+specific condition.
+
+### 3. Execution Layer (`Handler`)
+
+The execution layer provides the orchestration for execution of commands.
+
+- `Handler`: It combines the Strategy and Context together into a single
+execution unit.
+
+- A reactive loop manages a condition variable to ensure the Strategy only
+steps when necessary, either because a new Update arrived in the Context or a
+timeout occured. This prevents busy-waiting and optimizes process usage.
+
+### 4. Communication Layer (`ProtocolAdapter`)
 
 This acts like a translation layer between the raw MQTT network and internal
 execution logic.
@@ -44,65 +82,3 @@ compliant types are processed.
 
 - It does not manage the MQTT connection itself, instead it accepts a pointer
 to `MqttClientInterface`, allowing it to share a connection with other services.
-
-### 2. `EventBase` and `UpdateBase`
-
-These are the primary data carriers during execution. To avoid heavy
-inheritance, lightweight classes are used as base for all messages travelling
-through the execution system.
-
-- `EventBase` is the base class for all downstream messages (e.g., new order,
-instant action, order cancellation, etc.).
-
-- `UpdateBase` is the base class for all upstream messages (e.g., position
-update, battery status, order status, action status, etc.).
-
-- Both use a `get_type()` virtual function to return a `std::type_index`
-allowing for efficient routing without the need to perform a `dynamic_cast`.
-
-### 3. `EventQueue`
-
-A thread-safe queue object for storage and retrieval of events.
-
-- It is thread-safe due to an internally managed mutex.
-
-- It acts an abstraction layer over a `std::unordered_map` by providing it
-thread safety.
-
-### 4. `ExecutionEngine`
-
-Acts as an orchestration layer to drive the execution system forward. It also
-holds type-erased callbacks and manages the lifecycle of all their function
-pointers mapped to specific types.
-
-- For events (objects derived from `EventBase`), a container stores a
-`std::vector` of callbacks allowing multiple listeners to react to the same
-commands.
-
-- Stepping the engine, causes it to fetch an event from the `EventQueue`
-
-- That event is then used to find a stored callback. The function pointer
-to the callback is extracted and the function executed.
-
-- It uses an `std::unordered_map<std::type_index, ...>` to store
-lambda wrappers that reconstruct the original type before calling the user-
-defined callback.
-
-### 5. `Provider`
-
-The public-facing API for application logic to report back states to the
-execution layer.
-
-- It allows asynchronous state updates and handles the internal construction
-and routing to the callbacks.
-
-- It can be used to register listeners in the form of function pointers, to
-observe specific updates from the application logic.
-
-- For updates (objects derived from `UpdateBase`), a container maps a
-specific callback to a one update. Typically used to route robot state changes
-back to the execution system.
-
-- It uses an `std::unordered_map<std::type_index, ...>` to store
-lambda wrappers that reconstruct the original type before calling the user-
-defined callback.

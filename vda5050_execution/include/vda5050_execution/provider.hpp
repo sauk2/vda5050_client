@@ -21,10 +21,12 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "vda5050_execution/update.hpp"
+#include "vda5050_execution/base.hpp"
 
 namespace vda5050_execution {
 
@@ -38,10 +40,11 @@ public:
       std::is_base_of_v<UpdateBase, UpdateT>,
       "Update must be derived from UpdateBase");
 
-    push_shared(std::make_shared<UpdateT>(std::forward<Args>(args)...));
+    auto update = std::make_shared<UpdateT>(std::forward<Args>(args)...);
+    push_shared(std::move(update));
   }
 
-  void push_shared(std::shared_ptr<UpdateBase> update) const;
+  void push_shared(std::shared_ptr<UpdateBase> update);
 
   template <typename UpdateT>
   void on(std::function<void(std::shared_ptr<UpdateT>)> provider)
@@ -55,12 +58,14 @@ public:
       cb(std::static_pointer_cast<UpdateT>(update));
     };
 
-    providers_[std::type_index(typeid(UpdateT))] = std::move(wrapper);
+    std::lock_guard<std::mutex> lock(registry_mutex_);
+    providers_[std::type_index(typeid(UpdateT))].push_back(std::move(wrapper));
   }
 
 private:
   using ErasedProvider = std::function<void(std::shared_ptr<UpdateBase>)>;
-  std::unordered_map<std::type_index, ErasedProvider> providers_;
+  std::unordered_map<std::type_index, std::vector<ErasedProvider>> providers_;
+  std::mutex registry_mutex_;
 };
 
 }  // namespace vda5050_execution

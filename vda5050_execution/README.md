@@ -42,54 +42,182 @@ structs.
 
 ## 2. Execution Layer
 
-The `ExecutionEngine` and `Provider` handle the internal working of the
-execution system by decoupling the logic from network. This allows for an
-asynchronous execution of the VDA5050 commands.
+The Execution Layer separates state and logic where logic is encapsulated into
+Strategies that use their internal Engines to manage commands (Events) and
+asynchronous synchronization (Wait).
+
+### 2.1 Defining Custom Data
 
 ```cpp
-  // Custom events can be defined for internal communication. Or existing
-  // events can be used instead
-  struct MyCustomEvent : public vda5050_execution::EventBase
+  using namespace vda5050_execution;
+
+  // Updates are inbound broadcasts from the downstream entities
+  struct OrderUpdate
+  : public vda5050_execution::Initialize<OrderUpdate, UpdateBase>
   {
-    std::type_index get_type() const override
+    std::string order_id;
+    uint32_t sequence_id;
+
+    OrderUpdate(const std::string& order_id, uint32_t sequence_id)
+    : order_id(std::move(order_id)), sequence_id(sequence_id)
     {
-      return typeid(MyCustomEvent);
+      // Nothing to do here ...
     }
   };
 
-  // Custom updates can be defined for internal communication. Or existing
-  // updates can be used instead
-  struct MyCustomUpdate : public vda5050_execution::UpdateBase
+  // Events are outbound commands to internal entities
+  struct OrderEvent
+  : public vda5050_execution::Initialize<OrderEvent, EventBase>
   {
-    std::type_index get_type() const override
+    std::string order_id;
+    uint32_t sequence_id;
+    std::string node_id;
+
+    OrderEvent(
+      const std::string& order_id, uint32_t sequence_id,
+      const std::string& node_id)
+    : order_id(std::move(order_id)),
+      sequence_id(sequence_id),
+      node_id(std::move(node_id))
     {
-      return typeid(MyCustomUpdate);
+      // Nothing to do here ...
+    }
+```
+
+### 2.2 Implementing a Strategy
+
+Strategies are reactive and can pause their own logic to wait for specific
+updates without blocking other system components.
+
+```cpp
+  using namespace vda5050_execution;
+
+  class OrderDispatchStrategy : public vda5050_execution::StrategyInterface
+  {
+  public:
+    void init(
+      std::shared_ptr<vda5050_execution::ContextInterface> context) override
+    {
+      // Register how to handle internal events
+      engine()->on<OrderEvent>([](auto event) {
+        // Dispatch command to downstream listener
+      });
+
+      // Register how to notify engine about update
+      context->provider()->on<OrderUpdate>([this](auto update) {
+        this->engine()->notify(update);
+      });
+    }
+
+    void step(
+      std::shared_ptr<vda5050_execution::ContextInterface> context) override
+    {
+      // Check wait status
+      if (engine()->waiting()) return;  // Exit if still waiting for downstream update
+
+      // Process engine queue
+      engine()->step();
+
+      // Query the context for the latest update
+      if (auto order_update = context->get_update<OrderUpdate>())
+      {
+        if (order_update->sequence_id == 1)
+        {
+          // Emit event to execution queue
+          engine()->emit<OrderEvent>(Priority::NORMAL, "order_1", 2, "node_2");
+
+          // Flush execution queue to trigger dispatch
+          engine()->step();
+
+          // Pause the strategy until appropriate update arrives
+          engine()->suspend_till<OrderUpdate>(
+            std::chrono::seconds(5), [](auto update) {
+              return update->order_id == "order_1" && update->sequence_id == 2;
+            });
+        }
+      }
     }
   };
+```
 
-  // Intialize the engine (for downstream communication) and provider (for
-  // upstream communication)
-  auto engine = std::make_shared<vda5050_execution::ExecutionEngine>();
-  auto provider = std::make_shared<vda5050_execution::Provider>();
+### 2.3 Implementing a Context
 
-  // Register logic for specific events
-  engine->on<MyCustomEvent>([&](std::shared_ptr<MyCustomEvent> event) {
-      // This code runs when step() is called and MyCustomEvent is in the
-      // event queue
-    });
+The Strategy uses Context to query system states before performing logic.
+Instead of reacting to a stream of data, it retreives data in a type-safe
+manner.
 
-  // Register logic for the specific updates. Usually used by any entity that
-  // sends messages over MQTT
-  provider->on<MyCustomUpdate>([&](std::shared_ptr<MyCustomUpdate> update) {
-      // Process the update (e.g., prepare to send it over MQTT)
-    });
+```cpp
+  using namespace vda5050_execution;
 
-  // Trigger an event (simulate a command received over MQTT)
-  engine->emit<MyCustomEvent>();
+  class SimpleContext : public vda5050_execution::ContextInterface
+  {
+  public:
+    void init() override
+    {
+      // Listen to updates and cache them automatically
+      provider()->on<OrderUpdate>([this](auto update) {
+        std::lock_guard<std::mutex> lock(update_mutex_);
+        updates_[update->get_type()] = update;
+      });
 
-  // Step the engine to process the event
-  engine->step();
+      // Resources should be created and stored at the start of context
+      // initialization and should be assumed as static data
+      auto config = std::make_shared<ConfigResource>("agv_1");
+      std::lock_guard<std::mutex> lock(resource_mutex_);
+      resources_[config->get_type()] = config;
+    }
 
-  // Push an update (simulate reporting of some status)
-  provider->push<MyCustomUpdate>();
+  protected:
+    std::shared_ptr<UpdateBase> get_update_raw(
+      std::type_index type) const override
+    {
+      std::lock_guard<std::mutex> lock(update_mutex_);
+      auto it = updates_.find(type);
+      if (it != updates_.end()) return it->second;
+      return nullptr;
+    }
+
+    std::shared_ptr<ResourceBase> get_resource_raw(
+      std::type_index type) const override
+    {
+      std::lock_guard<std::mutex> lock(resource_mutex_);
+      auto it = resources_.find(type);
+      if (it != resources_.end()) return it->second;
+      return nullptr;
+    }
+
+  private:
+    // Maps to store type-erased updates and resources
+    std::unordered_map<std::type_index, std::shared_ptr<UpdateBase>> updates_;
+    mutable std::mutex update_mutex_;
+
+    std::unordered_map<std::type_index, std::shared_ptr<ResourceBase>> resources_;
+    mutable std::mutex resource_mutex_;
+  };
+```
+
+### 2.4 Orchestration using the Handler
+
+```cpp
+  int main()
+  {
+    auto context = std::make_shared<SimpleContext>();
+    auto strategy = std::make_shared<OrderDispatchStrategy>();
+    auto handler = Handler::make(context, strategy);
+
+    // Simulate an incoming order update
+    context->provider()->push<OrderUpdate>("order_1", 1);
+
+    // Run execution loop
+    // First spin will trigger strategy to send an order event
+    handler->spin_once();
+
+    // Simulate hardware finishing a task
+    context->provider()->push<OrderUpdate>("order_1", 2);
+
+    // Next spin will resolve the wait and continue the strategy
+    handler->spin_once();
+
+    return 0;
+  }
 ```

@@ -23,21 +23,37 @@
 #include <mutex>
 #include <queue>
 
-#include "vda5050_execution/event.hpp"
+#include "vda5050_execution/base.hpp"
 
 namespace vda5050_execution {
+
+enum class Priority
+{
+  NORMAL,
+  CRITICAL
+};
 
 class EventQueue
 {
 public:
-  void push(std::shared_ptr<EventBase> event);
-
-  bool empty() const;
+  void push(
+    std::shared_ptr<EventBase> event, Priority priority = Priority::NORMAL);
 
   std::shared_ptr<EventBase> pop();
 
+  std::shared_ptr<EventBase> pop_critical_only();
+
+  bool empty() const;
+
+  void clear_normal();
+
 private:
-  std::queue<std::shared_ptr<EventBase>> queue_;
+  std::shared_ptr<EventBase> pop_internal(
+    std::queue<std::shared_ptr<EventBase>>& queue);
+
+  std::queue<std::shared_ptr<EventBase>> normal_queue_;
+  std::queue<std::shared_ptr<EventBase>> critical_queue_;
+
   mutable std::mutex mutex_;
 };
 

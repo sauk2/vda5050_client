@@ -25,6 +25,8 @@
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
 
 #include <vda5050_types/connection.hpp>
+#include <vda5050_types/order.hpp>
+#include <vda5050_types/state.hpp>
 
 #include "vda5050_execution/protocol_adapter.hpp"
 

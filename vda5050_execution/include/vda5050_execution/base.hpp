@@ -16,31 +16,38 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/execution_engine.hpp"
-#include "vda5050_execution/event.hpp"
+#ifndef VDA5050_EXECUTION__BASE_HPP_
+#define VDA5050_EXECUTION__BASE_HPP_
+
+#include <typeindex>
 
 namespace vda5050_execution {
 
-//=============================================================================
-void ExecutionEngine::emit_shared(std::shared_ptr<EventBase> event)
+struct Base
 {
-  event_queue_.push(event);
-}
+  virtual ~Base() = default;
+  virtual std::type_index get_type() const = 0;
+};
 
-//=============================================================================
-void ExecutionEngine::step()
+struct EventBase : public Base
+{};
+
+struct UpdateBase : public Base
+{};
+
+struct ResourceBase : public Base
+{};
+
+template <typename DerivedT, typename BaseT>
+struct Initialize : public BaseT
 {
-  std::shared_ptr<EventBase> event = event_queue_.pop();
-  if (!event) return;
-
-  auto it = callbacks_.find(event->get_type());
-  if (it != callbacks_.end())
+  static inline const std::type_index type = std::type_index(typeid(DerivedT));
+  std::type_index get_type() const override
   {
-    for (const auto& cb : it->second)
-    {
-      cb(event);
-    }
+    return type;
   }
-}
+};
 
 }  // namespace vda5050_execution
+
+#endif  // VDA5050_EXECUTION__BASE_HPP_
