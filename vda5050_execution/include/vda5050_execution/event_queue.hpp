@@ -48,7 +48,7 @@ public:
   void clear_normal();
 
 private:
-  std::shared_ptr<EventBase> pop_internal_(
+  std::shared_ptr<EventBase> pop_internal(
     std::queue<std::shared_ptr<EventBase>>& queue);
 
   std::queue<std::shared_ptr<EventBase>> normal_queue_;

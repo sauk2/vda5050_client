@@ -44,8 +44,8 @@ std::shared_ptr<EventBase> EventQueue::pop()
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (!critical_queue_.empty()) return pop_internal_(critical_queue_);
-  if (!normal_queue_.empty()) return pop_internal_(normal_queue_);
+  if (!critical_queue_.empty()) return pop_internal(critical_queue_);
+  if (!normal_queue_.empty()) return pop_internal(normal_queue_);
 
   return nullptr;
 }
@@ -55,7 +55,7 @@ std::shared_ptr<EventBase> EventQueue::pop_critical_only()
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  if (!critical_queue_.empty()) return pop_internal_(critical_queue_);
+  if (!critical_queue_.empty()) return pop_internal(critical_queue_);
 
   return nullptr;
 }
@@ -76,7 +76,7 @@ void EventQueue::clear_normal()
 }
 
 //=============================================================================
-std::shared_ptr<EventBase> EventQueue::pop_internal_(
+std::shared_ptr<EventBase> EventQueue::pop_internal(
   std::queue<std::shared_ptr<EventBase>>& queue)
 {
   auto event = std::move(queue.front());
