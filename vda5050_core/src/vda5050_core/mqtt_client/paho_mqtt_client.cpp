@@ -27,7 +27,14 @@ namespace mqtt_client {
 std::shared_ptr<MqttClientInterface> create_default_client(
   const std::string& broker_address, const std::string& client_id)
 {
-  return PahoMqttClient::make(broker_address, client_id);
+  return PahoMqttClient::make_shared(broker_address, client_id);
+}
+
+//=============================================================================
+std::unique_ptr<MqttClientInterface> create_default_client_unique(
+  const std::string& broker_address, const std::string& client_id)
+{
+  return PahoMqttClient::make_unique(broker_address, client_id);
 }
 
 //=============================================================================
@@ -88,10 +95,19 @@ void MqttCallback::delivery_complete(mqtt::delivery_token_ptr /*tok*/)
 }
 
 //=============================================================================
-std::shared_ptr<PahoMqttClient> PahoMqttClient::make(
+std::shared_ptr<PahoMqttClient> PahoMqttClient::make_shared(
   const std::string& broker_address, const std::string& client_id)
 {
   auto paho_client = std::shared_ptr<PahoMqttClient>(
+    new PahoMqttClient(broker_address, client_id));
+  return paho_client;
+}
+
+//=============================================================================
+std::unique_ptr<PahoMqttClient> PahoMqttClient::make_unique(
+  const std::string& broker_address, const std::string& client_id)
+{
+  auto paho_client = std::unique_ptr<PahoMqttClient>(
     new PahoMqttClient(broker_address, client_id));
   return paho_client;
 }
