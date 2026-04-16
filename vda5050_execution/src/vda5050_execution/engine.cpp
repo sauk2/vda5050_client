@@ -42,7 +42,7 @@ void Engine::step()
   std::shared_ptr<EventBase> event;
   {
     std::lock_guard<std::mutex> lock(wait_mutex_);
-    check_timeout();
+    if (wait_timeout_.has_value()) check_timeout();
     event = waiting_ ? event_queue_.pop_critical_only() : event_queue_.pop();
   }
 
@@ -65,7 +65,7 @@ void Engine::step()
 bool Engine::waiting() const
 {
   std::lock_guard<std::mutex> lock(wait_mutex_);
-  check_timeout();
+  if (wait_timeout_.has_value()) check_timeout();
   return waiting_;
 }
 
@@ -73,13 +73,14 @@ bool Engine::waiting() const
 void Engine::reset_internal_wait() const
 {
   waiting_ = false;
+  wait_timeout_ = std::nullopt;
   wait_predicate_ = nullptr;
 }
 
 //=============================================================================
 void Engine::check_timeout() const
 {
-  if (waiting_ && std::chrono::steady_clock::now() > wait_timeout_)
+  if (waiting_ && std::chrono::steady_clock::now() > wait_timeout_.value())
     reset_internal_wait();
 }
 
