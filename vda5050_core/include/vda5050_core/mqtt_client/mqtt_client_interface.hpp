@@ -76,13 +76,22 @@ public:
     const std::string& topic, const std::string& message, int qos) = 0;
 };
 
-/// \brief Create a default MQTT client interface
+/// \brief Create a default shared MQTT client interface
 ///
 /// \param broker_address Address of the MQTT broker
 /// \param client_id ID of the MQTT client
 ///
 /// \return Shared pointer to MQTT client
-std::shared_ptr<MqttClientInterface> create_default_client(
+std::shared_ptr<MqttClientInterface> create_default_client_shared(
+  const std::string& broker_address, const std::string& client_id);
+
+/// \brief Create a default unique MQTT client interface
+///
+/// \param broker_address Address of the MQTT broker
+/// \param client_id ID of the MQTT client
+///
+/// \return Unique pointer to MQTT client
+std::unique_ptr<MqttClientInterface> create_default_client_unique(
   const std::string& broker_address, const std::string& client_id);
 
 }  // namespace mqtt_client
