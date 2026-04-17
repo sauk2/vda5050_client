@@ -73,7 +73,8 @@ public:
   /// \param message Raw message string
   /// \param Quality of service setting for the publish
   virtual void set_will(
-    const std::string& topic, const std::string& message, int qos) = 0;
+    const std::string& topic, const std::string& message, int qos,
+    bool retain = true) = 0;
 };
 
 /// \brief Create a default shared MQTT client interface
