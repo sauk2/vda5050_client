@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
+#include <csignal>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <typeindex>
 #include <unordered_map>
 
@@ -42,6 +44,15 @@ using vda5050_execution::ProtocolAdapter;
 using vda5050_execution::ResourceBase;
 using vda5050_execution::StrategyInterface;
 using vda5050_execution::UpdateBase;
+
+std::atomic_bool running{true};
+
+void signal_handler(int signal)
+{
+  VDA5050_INFO_STREAM(
+    "System Signal [" << signal << "] received. Shutting down ...");
+  running = false;
+}
 
 struct OrderUpdate : public Initialize<OrderUpdate, UpdateBase>
 {
@@ -84,12 +95,22 @@ class NavigationStrategy : public StrategyInterface
 public:
   void init(std::shared_ptr<ContextInterface> context) override
   {
-    engine()->on<NodeDispatchEvent>([](auto event) {});
+    VDA5050_INFO("Initializing NavigationStrategy ...");
+
+    engine()->on<NodeDispatchEvent>([](auto event) {
+      VDA5050_INFO_STREAM(
+        "Navigating to [" << event->x << ", " << event->y << "] "
+                          << "with sequence " << event->sequence_id);
+    });
+
+    context->provider()->on<NodeAckUpdate>(
+      [w = std::weak_ptr(engine())](auto update) {
+        if (auto m = w.lock()) m->notify(update);
+      });
   }
 
   void step(std::shared_ptr<ContextInterface> context) override
   {
-    engine()->step();
     if (engine()->waiting()) return;
 
     if (nodes_.empty())
@@ -97,6 +118,7 @@ public:
       auto order_update = context->get_update<OrderUpdate>();
       if (order_update)
       {
+        VDA5050_INFO("Adding nodes");
         nodes_ = order_update->order.nodes;
         current_idx_ = 0;
       }
@@ -111,6 +133,12 @@ public:
         Priority::NORMAL, target.sequence_id, target.node_position.value().x,
         target.node_position.value().y,
         target.node_position.value().theta.value_or(0));
+
+      VDA5050_INFO(
+        "Pushing node with sequence_id [{}] to event queue",
+        target.sequence_id);
+
+      engine()->step();
 
       engine()->suspend<NodeAckUpdate>(
         [seq = target.sequence_id](auto update) -> bool {
@@ -131,19 +159,31 @@ private:
 class StateStrategy : public StrategyInterface
 {
 public:
-  StateStrategy(std::shared_ptr<ProtocolAdapter> protocol_adapter)
+  explicit StateStrategy(std::shared_ptr<ProtocolAdapter> protocol_adapter)
   : protocol_adapter_(protocol_adapter),
     last_pub_time_(std::chrono::steady_clock::now())
   {
+    // Nothing to do here ...
   }
 
-  void init(std::shared_ptr<ContextInterface> context) override {}
+  void init(std::shared_ptr<ContextInterface> /*context*/) override
+  {
+    VDA5050_INFO("Initializing StateStrategy ...");
+  }
 
-  void step(std::shared_ptr<ContextInterface> context) override {}
+  void step(std::shared_ptr<ContextInterface> context) override
+  {
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_pub_time_ >= std::chrono::seconds(30))
+    {
+    }
+  }
 
 private:
   std::shared_ptr<ProtocolAdapter> protocol_adapter_;
   std::chrono::steady_clock::time_point last_pub_time_;
+
+  void publish_state() {}
 };
 
 class SimpleContext : public ContextInterface,
@@ -152,12 +192,11 @@ class SimpleContext : public ContextInterface,
 public:
   void init() override
   {
-    provider()->on<UpdateBase>([w = weak_from_this()](auto update) {
+    provider()->on<OrderUpdate>([w = weak_from_this()](auto update) {
       if (auto m = w.lock())
       {
         std::lock_guard<std::mutex> lock(m->mutex_);
         m->updates_[update->get_type()] = update;
-        m->notify_on_change();
       }
     });
   }
@@ -183,24 +222,26 @@ private:
 
 int main()
 {
-  auto mqtt_client = vda5050_core::mqtt_client::create_default_client(
+  std::signal(SIGINT, signal_handler);
+  std::signal(SIGTERM, signal_handler);
+
+  auto mqtt_client = vda5050_core::mqtt_client::create_default_client_unique(
     "tcp://localhost:1883", "vda5050_client");
-  auto protocol_adapter =
-    ProtocolAdapter::make(mqtt_client, "uagv", "2.0.0", "Manufacturer", "S001");
+  auto protocol_adapter = ProtocolAdapter::make(
+    std::move(mqtt_client), "uagv", "2.0.0", "Manufacturer", "S001");
+
+  vda5050_types::Connection connection_will;
+  connection_will.connection_state =
+    vda5050_types::ConnectionState::CONNECTIONBROKEN;
+  protocol_adapter->set_will<vda5050_types::Connection>(
+    connection_will, 1, true);
+
+  protocol_adapter->connect();
 
   auto context = std::make_shared<SimpleContext>();
   auto navigation_strategy = std::make_shared<NavigationStrategy>();
   auto state_strategy = std::make_shared<StateStrategy>(protocol_adapter);
-  auto handler = Handler::make(context, {navigation_strategy});
-
-  vda5050_types::Connection connection_will;
-  connection_will.header.header_id = 0;
-  connection_will.header.version = config_.version;
-  connection_will.header.manufacturer = config_.manufacturer;
-  connection_will.header.serial_number = config_.serial_number;
-  connection_will.header.timestamp = std::chrono::system_clock::now();
-  connection_will.connection_state =
-    vda5050_types::ConnectionState::CONNECTIONBROKEN;
+  auto handler = Handler::make(context, {navigation_strategy, state_strategy});
 
   protocol_adapter->subscribe<vda5050_types::Order>(
     [w = std::weak_ptr<ContextInterface>(context)](auto order, auto error) {
@@ -208,12 +249,23 @@ int main()
 
       if (auto m = w.lock())
       {
+        VDA5050_INFO("Received order with order_id: {}", order.order_id);
         m->provider()->push<OrderUpdate>(order);
       }
     },
     0);
 
-  handler->spin(std::chrono::milliseconds(100));
+  vda5050_types::Connection connection_online;
+  connection_online.connection_state = vda5050_types::ConnectionState::ONLINE;
+  protocol_adapter->publish<vda5050_types::Connection>(
+    connection_online, 1, true);
+
+  auto spin_thread = std::thread([&] { handler->spin(); });
+
+  vda5050_types::Connection connection_offline;
+  connection_offline.connection_state = vda5050_types::ConnectionState::OFFLINE;
+  protocol_adapter->publish<vda5050_types::Connection>(
+    connection_offline, 1, true);
 
   return 0;
 }
