@@ -24,7 +24,7 @@ namespace vda5050_core {
 namespace mqtt_client {
 
 //=============================================================================
-std::shared_ptr<MqttClientInterface> create_default_client(
+std::shared_ptr<MqttClientInterface> create_default_client_shared(
   const std::string& broker_address, const std::string& client_id)
 {
   return PahoMqttClient::make_shared(broker_address, client_id);
@@ -211,11 +211,11 @@ void PahoMqttClient::unsubscribe(const std::string& topic)
 
 //=============================================================================
 void PahoMqttClient::set_will(
-  const std::string& topic, const std::string& message, int qos)
+  const std::string& topic, const std::string& message, int qos, bool retain)
 {
   mqtt::will_options will;
   will.set_topic(topic);
-  will.set_retained(true);
+  will.set_retained(retain);
   will.set_qos(qos);
   will.set_payload(message);
 
