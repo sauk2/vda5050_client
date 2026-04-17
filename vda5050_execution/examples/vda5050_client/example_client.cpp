@@ -171,13 +171,7 @@ public:
     VDA5050_INFO("Initializing StateStrategy ...");
   }
 
-  void step(std::shared_ptr<ContextInterface> context) override
-  {
-    auto now = std::chrono::steady_clock::now();
-    if (now - last_pub_time_ >= std::chrono::seconds(30))
-    {
-    }
-  }
+  void step(std::shared_ptr<ContextInterface> /*context*/) override {}
 
 private:
   std::shared_ptr<ProtocolAdapter> protocol_adapter_;

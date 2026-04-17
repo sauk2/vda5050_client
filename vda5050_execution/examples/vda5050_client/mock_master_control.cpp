@@ -55,7 +55,7 @@ int main()
     },
     0);
 
-  while (!connected);
+  while (!connected) continue;
 
   vda5050_types::Order order;
   order.order_id = "test_order";
