@@ -80,12 +80,16 @@ class ProtocolAdapter : public std::enable_shared_from_this<ProtocolAdapter>
 {
 public:
   static std::shared_ptr<ProtocolAdapter> make(
-    std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+    std::unique_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
     const std::string& interface, const std::string& version,
     const std::string& manufacturer, const std::string serial_number);
 
+  void connect();
+
+  void disconnect();
+
   template <typename MessageT>
-  void publish(MessageT message, int qos, bool retained = false)
+  void publish(MessageT message, int qos, bool retain = false)
   {
     static_assert(
       is_valid_message_v<MessageT>, "Type is not supported in ProtocolAdapter");
@@ -105,7 +109,7 @@ public:
       nlohmann::json j = message;
 
       if (mqtt_client_)
-        mqtt_client_->publish(it->second, j.dump(), qos, retained);
+        mqtt_client_->publish(it->second, j.dump(), qos, retain);
     }
     catch (const nlohmann::json::exception& e)
     {
@@ -161,13 +165,66 @@ public:
     if (mqtt_client_) mqtt_client_->subscribe(it->second, wrapper, qos);
   }
 
+  template <typename MessageT>
+  void unsubscribe()
+  {
+    static_assert(
+      is_valid_message_v<MessageT>, "Type is not supported in ProtocolAdapter");
+
+    auto type_idx = std::type_index(typeid(MessageT));
+
+    auto it = topic_names_.find(type_idx);
+    if (it == topic_names_.end()) return;
+
+    if (mqtt_client_) mqtt_client_->unsubscribe(it->second);
+  }
+
+  template <typename MessageT>
+  void set_will(MessageT message, int qos, bool retain = true)
+  {
+    static_assert(
+      is_valid_message_v<MessageT>, "Type is not supported in ProtocolAdapter");
+
+    auto type_idx = std::type_index(typeid(MessageT));
+
+    auto it = topic_names_.find(type_idx);
+    if (it == topic_names_.end()) return;
+
+    try
+    {
+      vda5050_types::Header header{
+        header_ids_[type_idx], std::chrono::system_clock::now(), version_,
+        manufacturer_, serial_number_};
+      message.header = header;
+
+      nlohmann::json j = message;
+
+      if (mqtt_client_)
+        mqtt_client_->set_will(it->second, j.dump(), qos, retain);
+    }
+    catch (const nlohmann::json::exception& e)
+    {
+      VDA5050_ERROR(
+        "Serialization failed for will message to be added on {}: {}",
+        it->second, e.what());
+    }
+    catch (const std::exception& e)
+    {
+      VDA5050_ERROR(
+        "Unexpected error during adding will message to {}: {}", it->second,
+        e.what());
+    }
+  }
+
 private:
   ProtocolAdapter(
-    std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+    std::unique_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
     const std::string& interface, const std::string& version,
     const std::string& manufacturer, const std::string serial_number);
 
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
+  std::string get_topic_version(const std::string& version);
+
+  std::unique_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
 
   std::unordered_map<std::type_index, std::string> topic_names_;
   std::unordered_map<std::type_index, uint32_t> header_ids_;
