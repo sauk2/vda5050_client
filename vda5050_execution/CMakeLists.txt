@@ -44,6 +44,12 @@ target_link_libraries(engine_example PUBLIC vda5050_execution)
 add_executable(handler_integration examples/handler_integration.cpp)
 target_link_libraries(handler_integration PUBLIC vda5050_execution)
 
+add_executable(example_client examples/vda5050_client/example_client.cpp)
+target_link_libraries(example_client PUBLIC vda5050_execution)
+
+add_executable(mock_master_control examples/vda5050_client/mock_master_control.cpp)
+target_link_libraries(mock_master_control PUBLIC vda5050_execution)
+
 install(
   DIRECTORY include/vda5050_execution
   DESTINATION include
@@ -85,6 +91,18 @@ install(
 install(
   TARGETS handler_integration
   EXPORT handler_integration
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS example_client
+  EXPORT example_client
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS mock_master_control
+  EXPORT mock_master_control
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

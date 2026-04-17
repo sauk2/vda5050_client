@@ -23,6 +23,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -66,16 +67,45 @@ public:
   }
 
   template <typename UpdateT>
+  void suspend(std::function<bool(std::shared_ptr<UpdateT>)> predicate)
+  {
+    register_internal_wait(std::nullopt, predicate);
+  }
+
+  template <typename UpdateT>
   void suspend_for(
     std::chrono::milliseconds timeout,
     std::function<bool(std::shared_ptr<UpdateT>)> predicate = nullptr)
+  {
+    register_internal_wait<UpdateT>(timeout, predicate);
+  }
+
+  void notify(std::shared_ptr<UpdateBase> update);
+
+  void step();
+
+  bool waiting() const;
+
+private:
+  template <typename UpdateT>
+  void register_internal_wait(
+    std::optional<std::chrono::milliseconds> timeout,
+    std::function<bool(std::shared_ptr<UpdateT>)> predicate)
   {
     static_assert(
       std::is_base_of_v<UpdateBase, UpdateT>,
       "Update must be derived from UpdateBase");
 
     std::lock_guard<std::mutex> lock(wait_mutex_);
-    wait_timeout_ = std::chrono::steady_clock::now() + timeout;
+
+    if (timeout.has_value())
+    {
+      wait_timeout_ = std::chrono::steady_clock::now() + timeout.value();
+    }
+    else
+    {
+      wait_timeout_ = std::nullopt;
+    }
 
     wait_predicate_ = [predicate](std::shared_ptr<UpdateBase> update) -> bool {
       if (update->get_type() == std::type_index(typeid(UpdateT)))
@@ -86,19 +116,12 @@ public:
           return predicate(update_t);
         }
       }
-      return true;
+      return false;
     };
 
     waiting_ = true;
   }
 
-  void notify(std::shared_ptr<UpdateBase> update);
-
-  void step();
-
-  bool waiting() const;
-
-private:
   void reset_internal_wait() const;
 
   void check_timeout() const;
@@ -110,7 +133,7 @@ private:
   std::mutex registry_mutex_;
 
   mutable bool waiting_;
-  mutable std::chrono::steady_clock::time_point wait_timeout_;
+  mutable std::optional<std::chrono::steady_clock::time_point> wait_timeout_;
   mutable std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_;
   mutable std::mutex wait_mutex_;
 };

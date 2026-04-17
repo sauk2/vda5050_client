@@ -52,14 +52,15 @@ public:
     (override));
   MOCK_METHOD(void, unsubscribe, (const std::string&), (override));
   MOCK_METHOD(
-    void, set_will, (const std::string&, const std::string&, int), (override));
+    void, set_will, (const std::string&, const std::string&, int, bool),
+    (override));
 };
 
 template <typename T>
 class ProtocolAdapterTest : public testing::Test
 {
 protected:
-  std::shared_ptr<MockMqttClient> mock_;
+  MockMqttClient* mock_{nullptr};
   std::shared_ptr<vda5050_execution::ProtocolAdapter> adapter_;
 
   std::string interface_;
@@ -75,17 +76,18 @@ protected:
   void SetUp()
   {
     interface_ = "uagv";
-    version_ = "v2";
+    version_ = "2.0.0";
     manufacturer_ = "ROS-I";
     serial_number_ = "S001";
 
-    mock_ = std::make_shared<MockMqttClient>();
+    auto mock = std::make_unique<MockMqttClient>();
+    mock_ = mock.get();
 
     adapter_ = vda5050_execution::ProtocolAdapter::make(
-      mock_, interface_, version_, manufacturer_, serial_number_);
+      std::move(mock), interface_, version_, manufacturer_, serial_number_);
 
     topic_prefix_ = fmt::format(
-      "{}/{}/{}/{}/", interface_, version_, manufacturer_, serial_number_);
+      "{}/{}/{}/{}/", interface_, "v2", manufacturer_, serial_number_);
 
     qos_ = 0;
     retained_ = false;
@@ -93,8 +95,8 @@ protected:
 
   void TearDown()
   {
-    mock_.reset();
     adapter_.reset();
+    mock_ = nullptr;
   }
 };
 
@@ -169,3 +171,5 @@ TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
   this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
   this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
 }
+
+// TODO(sauk2): Adding missing API tests
