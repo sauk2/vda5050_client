@@ -37,10 +37,10 @@ struct AGVGeometry
   /// \brief Array of AGV envelope curves in 2D. eg: the mechanical envelopes
   /// for unloaded and loaded state, the safety fields for different speed
   /// cases.
-  std::optional<std::vector<Envelope2d>> envelopes_2d;
+  std::optional<std::vector<Envelope2d>> envelopes2d;
 
   /// \brief Array of AGV envelope curves in 3D.
-  std::optional<std::vector<Envelope3d>> envelopes_3d;
+  std::optional<std::vector<Envelope3d>> envelopes3d;
 
   /// \brief Equality operator
   ///
@@ -50,8 +50,8 @@ struct AGVGeometry
   inline bool operator==(const AGVGeometry& other) const
   {
     if (this->wheel_definitions != other.wheel_definitions) return false;
-    if (this->envelopes_2d != other.envelopes_2d) return false;
-    if (this->envelopes_3d != other.envelopes_3d) return false;
+    if (this->envelopes2d != other.envelopes2d) return false;
+    if (this->envelopes3d != other.envelopes3d) return false;
     return true;
   }
 

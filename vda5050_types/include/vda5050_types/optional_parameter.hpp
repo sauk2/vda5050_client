@@ -16,36 +16,42 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_TYPES__VEHICLE_CONFIG_HPP_
-#define VDA5050_TYPES__VEHICLE_CONFIG_HPP_
+#ifndef VDA5050_TYPES__OPTIONAL_PARAMETER_HPP_
+#define VDA5050_TYPES__OPTIONAL_PARAMETER_HPP_
 
 #include <optional>
-#include <vector>
-#include "vda5050_types/network.hpp"
-#include "vda5050_types/version_info.hpp"
+#include <string>
+#include "vda5050_types/support.hpp"
 
 namespace vda5050_types {
 
-/// \brief Details the software and hardware versions running on the vehicle,
-/// as well as a brief summary of network information.
-struct VehicleConfig
+/// \brief Supported or required optional parameters.
+struct OptionalParameter
 {
-  /// \brief Array of key-value pair objects containing software and hardware information.
-  std::optional<std::vector<VersionInfo>> versions;
+  /// \brief Full name of optional parameter.
+  /// eg: "order.nodes.nodePosition.allowedDeviationTheta".
+  std::string parameter;
 
-  /// \brief Information about the vehicle's network connection.
-  /// The listed information shall not be updated while the vehicle is operating.
-  std::optional<Network> network;
+  /// \brief Type of support for the optional parameter.
+  Support support;
+
+  /// \brief Free-form text: description of optional parameter.
+  /// eg:
+  ///   - Reason why the optional parameter direction is necessary for this AGV type.
+  ///   - The parameter nodeMarker shall contain unsigned integers only.
+  ///   - NURBS support is limited to straight lines and circular segments.
+  std::optional<std::string> description;
 
   /// \brief Equality operator
   ///
   /// \param other The other object to compare to
   ///
   /// \return is equal?
-  inline bool operator==(const VehicleConfig& other) const
+  inline bool operator==(const OptionalParameter& other) const
   {
-    if (this->versions != other.versions) return false;
-    if (this->network != other.network) return false;
+    if (this->parameter != other.parameter) return false;
+    if (this->support != other.support) return false;
+    if (this->description != other.description) return false;
     return true;
   }
 
@@ -54,7 +60,7 @@ struct VehicleConfig
   /// \param other The other object to compare to
   ///
   /// \return is not equal?
-  inline bool operator!=(const VehicleConfig& other) const
+  inline bool operator!=(const OptionalParameter& other) const
   {
     return !(this->operator==(other));
   }
@@ -62,4 +68,4 @@ struct VehicleConfig
 
 }  // namespace vda5050_types
 
-#endif  // VDA5050_TYPES__VEHICLE_CONFIG_HPP_
+#endif  // VDA5050_TYPES__OPTIONAL_PARAMETER_HPP_

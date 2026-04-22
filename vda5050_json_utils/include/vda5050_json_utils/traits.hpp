@@ -28,8 +28,12 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include <vda5050_types/action_scope.hpp>
 #include <vda5050_types/action_status.hpp>
+#include <vda5050_types/agv_class.hpp>
+#include <vda5050_types/agv_kinematic.hpp>
 #include <vda5050_types/blocking_type.hpp>
 #include <vda5050_types/connection.hpp>
 #include <vda5050_types/connection_state.hpp>
@@ -39,17 +43,26 @@
 #include <vda5050_types/info_level.hpp>
 #include <vda5050_types/operating_mode.hpp>
 #include <vda5050_types/orientation_type.hpp>
+#include <vda5050_types/support.hpp>
+#include <vda5050_types/value_data_type.hpp>
+#include <vda5050_types/wheel_definition_type.hpp>
 
 #ifdef ENABLE_ROS2
 #include <rosidl_runtime_cpp/bounded_vector.hpp>
 #include <vda5050_interfaces/msg/action.hpp>
+#include <vda5050_interfaces/msg/action_parameter_factsheet.hpp>
 #include <vda5050_interfaces/msg/action_state.hpp>
+#include <vda5050_interfaces/msg/agv_action.hpp>
+#include <vda5050_interfaces/msg/blocking_type.hpp>
 #include <vda5050_interfaces/msg/connection.hpp>
 #include <vda5050_interfaces/msg/edge.hpp>
 #include <vda5050_interfaces/msg/error.hpp>
 #include <vda5050_interfaces/msg/info.hpp>
+#include <vda5050_interfaces/msg/optional_parameter.hpp>
 #include <vda5050_interfaces/msg/safety_state.hpp>
 #include <vda5050_interfaces/msg/state.hpp>
+#include <vda5050_interfaces/msg/type_specification.hpp>
+#include <vda5050_interfaces/msg/wheel_definition.hpp>
 #endif  // ENABLE_ROS2
 
 namespace vda5050_json_utils {
@@ -69,7 +82,7 @@ struct optional_field_traits<std::optional<T>>
     return opt.has_value();
   }
 
-  static const T& get(const std::optional<T>& opt)
+  static const T get(const std::optional<T>& opt)
   {
     return opt.value();
   }
@@ -107,10 +120,11 @@ struct optional_field_traits<rosidl_runtime_cpp::BoundedVector<T, 1, Alloc>>
   }
 };
 
+//=============================================================================
 template <typename T, std::size_t Max, typename Alloc>
 struct optional_field_traits<rosidl_runtime_cpp::BoundedVector<T, Max, Alloc>>
 {
-  using value_type = T;
+  using value_type = rosidl_runtime_cpp::BoundedVector<T, Max, Alloc>;
 
   static bool has_value(
     const rosidl_runtime_cpp::BoundedVector<T, Max, Alloc>& opt)
@@ -127,6 +141,29 @@ struct optional_field_traits<rosidl_runtime_cpp::BoundedVector<T, Max, Alloc>>
   template <typename U>
   static void set(
     rosidl_runtime_cpp::BoundedVector<T, Max, Alloc>& opt, U&& val)
+  {
+    opt = std::forward<U>(val);
+  }
+};
+
+//=============================================================================
+template <typename T, typename Alloc>
+struct optional_field_traits<std::vector<T, Alloc>>
+{
+  using value_type = std::vector<T, Alloc>;
+
+  static bool has_value(const std::vector<T, Alloc>& opt)
+  {
+    return !opt.empty();
+  }
+
+  static const std::vector<T> get(const std::vector<T>& opt)
+  {
+    return opt;
+  }
+
+  template <typename U>
+  static void set(std::vector<T, Alloc>& opt, U&& val)
   {
     opt = std::forward<U>(val);
   }
@@ -729,11 +766,12 @@ struct blocking_type_traits<std::string>
 {
   static std::string to_string(const std::string& type)
   {
-    using vda5050_interfaces::msg::Action;
+    using vda5050_interfaces::msg::BlockingType;
 
     if (
-      type == Action::BLOCKING_TYPE_NONE ||
-      type == Action::BLOCKING_TYPE_SOFT || type == Action::BLOCKING_TYPE_HARD)
+      type == BlockingType::BLOCKING_TYPE_NONE ||
+      type == BlockingType::BLOCKING_TYPE_SOFT ||
+      type == BlockingType::BLOCKING_TYPE_HARD)
     {
       return type;
     }
@@ -742,11 +780,12 @@ struct blocking_type_traits<std::string>
 
   static std::string from_string(const std::string& type)
   {
-    using vda5050_interfaces::msg::Action;
+    using vda5050_interfaces::msg::BlockingType;
 
     if (
-      type == Action::BLOCKING_TYPE_NONE ||
-      type == Action::BLOCKING_TYPE_SOFT || type == Action::BLOCKING_TYPE_HARD)
+      type == BlockingType::BLOCKING_TYPE_NONE ||
+      type == BlockingType::BLOCKING_TYPE_SOFT ||
+      type == BlockingType::BLOCKING_TYPE_HARD)
     {
       return type;
     }
@@ -817,6 +856,582 @@ struct orientation_type_traits<std::string>
       return type;
     }
     throw std::runtime_error("Invalid orientationType string");
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct agv_kinematic_traits;
+
+//=============================================================================
+template <>
+struct agv_kinematic_traits<vda5050_types::AGVKinematic>
+{
+  static std::string to_string(const vda5050_types::AGVKinematic& type)
+  {
+    using vda5050_types::AGVKinematic;
+
+    switch (type)
+    {
+      case AGVKinematic::DIFF:
+        return "DIFF";
+      case AGVKinematic::OMNI:
+        return "OMNI";
+      case AGVKinematic::THREEWHEEL:
+        return "THREEWHEEL";
+      default:
+        throw std::runtime_error("Invalid AGVKinematic enum value");
+    }
+  }
+
+  static vda5050_types::AGVKinematic from_string(const std::string& type)
+  {
+    using vda5050_types::AGVKinematic;
+
+    if (type == "DIFF") return AGVKinematic::DIFF;
+    if (type == "OMNI") return AGVKinematic::OMNI;
+    if (type == "THREEWHEEL") return AGVKinematic::THREEWHEEL;
+    throw std::runtime_error("Invalid agvKinematic string");
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct agv_kinematic_traits<std::string>
+{
+  static std::string to_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::TypeSpecification;
+
+    if (
+      type == TypeSpecification::AGV_KINEMATIC_DIFF ||
+      type == TypeSpecification::AGV_KINEMATIC_OMNI ||
+      type == TypeSpecification::AGV_KINEMATIC_THREEWHEEL)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid agv_kinematic value");
+  }
+
+  static std::string from_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::TypeSpecification;
+
+    if (
+      type == TypeSpecification::AGV_KINEMATIC_DIFF ||
+      type == TypeSpecification::AGV_KINEMATIC_OMNI ||
+      type == TypeSpecification::AGV_KINEMATIC_THREEWHEEL)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid agvKinematic string");
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct agv_class_traits;
+
+//=============================================================================
+template <>
+struct agv_class_traits<vda5050_types::AGVClass>
+{
+  static std::string to_string(const vda5050_types::AGVClass& type)
+  {
+    using vda5050_types::AGVClass;
+
+    switch (type)
+    {
+      case AGVClass::FORKLIFT:
+        return "FORKLIFT";
+      case AGVClass::CONVEYOR:
+        return "CONVEYOR";
+      case AGVClass::TUGGER:
+        return "TUGGER";
+      case AGVClass::CARRIER:
+        return "CARRIER";
+      default:
+        throw std::runtime_error("Invalid AGVClass enum value");
+    }
+  }
+
+  static vda5050_types::AGVClass from_string(const std::string& type)
+  {
+    using vda5050_types::AGVClass;
+
+    if (type == "FORKLIFT") return AGVClass::FORKLIFT;
+    if (type == "CONVEYOR") return AGVClass::CONVEYOR;
+    if (type == "TUGGER") return AGVClass::TUGGER;
+    if (type == "CARRIER") return AGVClass::CARRIER;
+    throw std::runtime_error("Invalid agvClass string");
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct agv_class_traits<std::string>
+{
+  static std::string to_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::TypeSpecification;
+
+    if (
+      type == TypeSpecification::AGV_CLASS_FORKLIFT ||
+      type == TypeSpecification::AGV_CLASS_CONVEYOR ||
+      type == TypeSpecification::AGV_CLASS_TUGGER ||
+      type == TypeSpecification::AGV_CLASS_CARRIER)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid agv_class value");
+  }
+
+  static std::string from_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::TypeSpecification;
+
+    if (
+      type == TypeSpecification::AGV_CLASS_FORKLIFT ||
+      type == TypeSpecification::AGV_CLASS_CONVEYOR ||
+      type == TypeSpecification::AGV_CLASS_TUGGER ||
+      type == TypeSpecification::AGV_CLASS_CARRIER)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid agvClass string");
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct support_traits;
+
+//=============================================================================
+template <>
+struct support_traits<vda5050_types::Support>
+{
+  static std::string to_string(const vda5050_types::Support& type)
+  {
+    using vda5050_types::Support;
+
+    switch (type)
+    {
+      case Support::SUPPORTED:
+        return "SUPPORTED";
+      case Support::REQUIRED:
+        return "REQUIRED";
+      default:
+        throw std::runtime_error("Invalid Support enum value");
+    }
+  }
+
+  static vda5050_types::Support from_string(const std::string& type)
+  {
+    using vda5050_types::Support;
+
+    if (type == "SUPPORTED") return Support::SUPPORTED;
+    if (type == "REQUIRED") return Support::REQUIRED;
+    throw std::runtime_error("Invalid support string");
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct support_traits<std::string>
+{
+  static std::string to_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::OptionalParameter;
+
+    if (
+      type == OptionalParameter::SUPPORT_SUPPORTED ||
+      type == OptionalParameter::SUPPORT_REQUIRED)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid support value");
+  }
+
+  static std::string from_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::OptionalParameter;
+
+    if (
+      type == OptionalParameter::SUPPORT_SUPPORTED ||
+      type == OptionalParameter::SUPPORT_REQUIRED)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid support string");
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct action_scopes_traits;
+
+//=============================================================================
+template <>
+struct action_scopes_traits<std::vector<vda5050_types::ActionScope>>
+{
+  static std::vector<std::string> to_string(
+    const std::vector<vda5050_types::ActionScope>& types)
+  {
+    using vda5050_types::ActionScope;
+
+    std::vector<std::string> output;
+    for (const auto& type : types)
+    {
+      switch (type)
+      {
+        case ActionScope::INSTANT:
+          output.push_back("INSTANT");
+          break;
+        case ActionScope::NODE:
+          output.push_back("NODE");
+          break;
+        case ActionScope::EDGE:
+          output.push_back("EDGE");
+          break;
+        default:
+          throw std::runtime_error("Invalid ActionScope enum value");
+      }
+    }
+    return output;
+  }
+
+  static std::vector<vda5050_types::ActionScope> from_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_types::ActionScope;
+
+    std::vector<vda5050_types::ActionScope> output;
+    for (const auto& type : types)
+    {
+      if (type == "INSTANT")
+        output.push_back(ActionScope::INSTANT);
+      else if (type == "NODE")
+        output.push_back(ActionScope::NODE);
+      else if (type == "EDGE")
+        output.push_back(ActionScope::EDGE);
+      else
+        throw std::runtime_error("Invalid actionScope string");
+    }
+    return output;
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct action_scopes_traits<std::vector<std::string>>
+{
+  static std::vector<std::string> to_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_interfaces::msg::AGVAction;
+
+    for (const auto& type : types)
+    {
+      if (
+        type != AGVAction::ACTION_SCOPE_INSTANT &&
+        type != AGVAction::ACTION_SCOPE_NODE &&
+        type != AGVAction::ACTION_SCOPE_EDGE)
+      {
+        throw std::runtime_error("Invalid action_scopes value");
+      }
+    }
+    return types;
+  }
+
+  static std::vector<std::string> from_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_interfaces::msg::AGVAction;
+
+    for (const auto& type : types)
+    {
+      if (
+        type != AGVAction::ACTION_SCOPE_INSTANT &&
+        type != AGVAction::ACTION_SCOPE_NODE &&
+        type != AGVAction::ACTION_SCOPE_EDGE)
+      {
+        throw std::runtime_error("Invalid actionScopes value");
+      }
+    }
+    return types;
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct value_data_type_traits;
+
+//=============================================================================
+template <>
+struct value_data_type_traits<vda5050_types::ValueDataType>
+{
+  static std::string to_string(const vda5050_types::ValueDataType& type)
+  {
+    using vda5050_types::ValueDataType;
+
+    switch (type)
+    {
+      case ValueDataType::BOOL:
+        return "BOOL";
+      case ValueDataType::NUMBER:
+        return "NUMBER";
+      case ValueDataType::INTEGER:
+        return "INTEGER";
+      case ValueDataType::FLOAT:
+        return "FLOAT";
+      case ValueDataType::STRING:
+        return "STRING";
+      case ValueDataType::OBJECT:
+        return "OBJECT";
+      case ValueDataType::ARRAY:
+        return "ARRAY";
+      default:
+        throw std::runtime_error("Invalid ValueDataType enum value");
+    }
+  }
+
+  static vda5050_types::ValueDataType from_string(const std::string& type)
+  {
+    using vda5050_types::ValueDataType;
+
+    if (type == "BOOL") return ValueDataType::BOOL;
+    if (type == "NUMBER") return ValueDataType::NUMBER;
+    if (type == "INTEGER") return ValueDataType::INTEGER;
+    if (type == "FLOAT") return ValueDataType::FLOAT;
+    if (type == "STRING") return ValueDataType::STRING;
+    if (type == "OBJECT") return ValueDataType::OBJECT;
+    if (type == "ARRAY") return ValueDataType::ARRAY;
+    throw std::runtime_error("Invalid valueDataType string");
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct value_data_type_traits<std::string>
+{
+  static std::string to_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::ActionParameterFactsheet;
+
+    if (
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_BOOL ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_NUMBER ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_INTEGER ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_FLOAT ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_STRING ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_OBJECT ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_ARRAY)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid value_data_type value");
+  }
+
+  static std::string from_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::ActionParameterFactsheet;
+
+    if (
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_BOOL ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_NUMBER ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_INTEGER ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_FLOAT ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_STRING ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_OBJECT ||
+      type == ActionParameterFactsheet::VALUE_DATA_TYPE_ARRAY)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid valueDataType string");
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct blocking_types_traits;
+
+//=============================================================================
+template <>
+struct blocking_types_traits<std::vector<vda5050_types::BlockingType>>
+{
+  static std::vector<std::string> to_string(
+    const std::vector<vda5050_types::BlockingType>& types)
+  {
+    using vda5050_types::BlockingType;
+
+    std::vector<std::string> output;
+    for (const auto& type : types)
+    {
+      switch (type)
+      {
+        case BlockingType::NONE:
+          output.push_back("NONE");
+          break;
+        case BlockingType::SOFT:
+          output.push_back("SOFT");
+          break;
+        case BlockingType::HARD:
+          output.push_back("HARD");
+          break;
+        default:
+          throw std::runtime_error("Invalid BlockingType enum value");
+      }
+    }
+    return output;
+  }
+
+  static std::vector<vda5050_types::BlockingType> from_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_types::BlockingType;
+
+    std::vector<vda5050_types::BlockingType> output;
+    for (const auto& type : types)
+    {
+      if (type == "NONE")
+        output.push_back(BlockingType::NONE);
+      else if (type == "SOFT")
+        output.push_back(BlockingType::SOFT);
+      else if (type == "HARD")
+        output.push_back(BlockingType::HARD);
+      else
+        throw std::runtime_error("Invalid blockingType string");
+    }
+    return output;
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct blocking_types_traits<std::vector<std::string>>
+{
+  static std::vector<std::string> to_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_interfaces::msg::BlockingType;
+
+    for (const auto& type : types)
+    {
+      if (
+        type != BlockingType::BLOCKING_TYPE_NONE &&
+        type != BlockingType::BLOCKING_TYPE_SOFT &&
+        type != BlockingType::BLOCKING_TYPE_HARD)
+      {
+        throw std::runtime_error("Invalid blocking_types value");
+      }
+    }
+    return types;
+  }
+
+  static std::vector<std::string> from_string(
+    const std::vector<std::string>& types)
+  {
+    using vda5050_interfaces::msg::BlockingType;
+
+    for (const auto& type : types)
+    {
+      if (
+        type != BlockingType::BLOCKING_TYPE_NONE &&
+        type != BlockingType::BLOCKING_TYPE_SOFT &&
+        type != BlockingType::BLOCKING_TYPE_HARD)
+      {
+        throw std::runtime_error("Invalid blockingTypes value");
+      }
+    }
+    return types;
+  }
+};
+#endif  // ENABLE_ROS2
+
+//=============================================================================
+template <typename T>
+struct wheel_definition_type_traits;
+
+//=============================================================================
+template <>
+struct wheel_definition_type_traits<vda5050_types::WheelDefinitionType>
+{
+  static std::string to_string(const vda5050_types::WheelDefinitionType& type)
+  {
+    using vda5050_types::WheelDefinitionType;
+
+    switch (type)
+    {
+      case WheelDefinitionType::DRIVE:
+        return "DRIVE";
+      case WheelDefinitionType::CASTER:
+        return "CASTER";
+      case WheelDefinitionType::FIXED:
+        return "FIXED";
+      case WheelDefinitionType::MECANUM:
+        return "MECANUM";
+      default:
+        throw std::runtime_error("Invalid WheelDefinitionType enum value");
+    }
+  }
+
+  static vda5050_types::WheelDefinitionType from_string(const std::string& type)
+  {
+    using vda5050_types::WheelDefinitionType;
+
+    if (type == "DRIVE") return WheelDefinitionType::DRIVE;
+    if (type == "CASTER") return WheelDefinitionType::CASTER;
+    if (type == "FIXED") return WheelDefinitionType::FIXED;
+    if (type == "MECANUM") return WheelDefinitionType::MECANUM;
+    throw std::runtime_error("Invalid wheelDefinitionType string");
+  }
+};
+
+//=============================================================================
+#ifdef ENABLE_ROS2
+template <>
+struct wheel_definition_type_traits<std::string>
+{
+  static std::string to_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::WheelDefinition;
+
+    if (
+      type == WheelDefinition::TYPE_DRIVE ||
+      type == WheelDefinition::TYPE_CASTER ||
+      type == WheelDefinition::TYPE_FIXED ||
+      type == WheelDefinition::TYPE_MECANUM)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid wheel_definition_type value");
+  }
+
+  static std::string from_string(const std::string& type)
+  {
+    using vda5050_interfaces::msg::WheelDefinition;
+
+    if (
+      type == WheelDefinition::TYPE_DRIVE ||
+      type == WheelDefinition::TYPE_CASTER ||
+      type == WheelDefinition::TYPE_FIXED ||
+      type == WheelDefinition::TYPE_MECANUM)
+    {
+      return type;
+    }
+    throw std::runtime_error("Invalid wheelDefinitionType string");
   }
 };
 #endif  // ENABLE_ROS2
