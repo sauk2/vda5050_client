@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_JSON_UTILS__TRAITS_HPP_
-#define VDA5050_JSON_UTILS__TRAITS_HPP_
+#ifndef VDA5050_CORE__JSON_UTILS__TRAITS_HPP_
+#define VDA5050_CORE__JSON_UTILS__TRAITS_HPP_
 
 #include <chrono>
 #include <ctime>
@@ -30,22 +30,21 @@
 #include <utility>
 #include <vector>
 
-#include <vda5050_types/action_scope.hpp>
-#include <vda5050_types/action_status.hpp>
-#include <vda5050_types/agv_class.hpp>
-#include <vda5050_types/agv_kinematic.hpp>
-#include <vda5050_types/blocking_type.hpp>
-#include <vda5050_types/connection.hpp>
-#include <vda5050_types/connection_state.hpp>
-#include <vda5050_types/e_stop.hpp>
-#include <vda5050_types/error_level.hpp>
-#include <vda5050_types/header.hpp>
-#include <vda5050_types/info_level.hpp>
-#include <vda5050_types/operating_mode.hpp>
-#include <vda5050_types/orientation_type.hpp>
-#include <vda5050_types/support.hpp>
-#include <vda5050_types/value_data_type.hpp>
-#include <vda5050_types/wheel_definition_type.hpp>
+#include "vda5050_core/types/action_scope.hpp"
+#include "vda5050_core/types/action_status.hpp"
+#include "vda5050_core/types/agv_class.hpp"
+#include "vda5050_core/types/agv_kinematic.hpp"
+#include "vda5050_core/types/blocking_type.hpp"
+#include "vda5050_core/types/connection_state.hpp"
+#include "vda5050_core/types/e_stop.hpp"
+#include "vda5050_core/types/error_level.hpp"
+#include "vda5050_core/types/header.hpp"
+#include "vda5050_core/types/info_level.hpp"
+#include "vda5050_core/types/operating_mode.hpp"
+#include "vda5050_core/types/orientation_type.hpp"
+#include "vda5050_core/types/support.hpp"
+#include "vda5050_core/types/value_data_type.hpp"
+#include "vda5050_core/types/wheel_definition_type.hpp"
 
 #ifdef ENABLE_ROS2
 #include <rosidl_runtime_cpp/bounded_vector.hpp>
@@ -65,7 +64,9 @@
 #include <vda5050_interfaces/msg/wheel_definition.hpp>
 #endif  // ENABLE_ROS2
 
-namespace vda5050_json_utils {
+namespace vda5050_core {
+
+namespace json_utils {
 
 //=============================================================================
 template <typename T>
@@ -188,7 +189,7 @@ inline std::string to_iso8601(TimePoint time_point)
   gmtime_r(&time_sec, &tm_buf);
 
   std::ostringstream oss;
-  oss << std::put_time(&tm_buf, vda5050_types::ISO8601_FORMAT);
+  oss << std::put_time(&tm_buf, types::ISO8601_FORMAT);
   oss << "." << std::setw(3) << std::setfill('0') << millisec << "Z";
   if (oss.fail())
   {
@@ -209,7 +210,7 @@ inline TimePoint from_iso8601(const std::string& time_string)
   int millisec = 0;
 
   std::istringstream ss(time_string);
-  ss >> std::get_time(&t, vda5050_types::ISO8601_FORMAT);
+  ss >> std::get_time(&t, types::ISO8601_FORMAT);
 
   ss >> sep;
   if (ss.fail() || sep != '.')
@@ -293,11 +294,11 @@ struct connection_state_traits;
 
 //=============================================================================
 template <>
-struct connection_state_traits<vda5050_types::ConnectionState>
+struct connection_state_traits<types::ConnectionState>
 {
-  static std::string to_string(const vda5050_types::ConnectionState& state)
+  static std::string to_string(const types::ConnectionState& state)
   {
-    using vda5050_types::ConnectionState;
+    using types::ConnectionState;
 
     switch (state)
     {
@@ -312,9 +313,9 @@ struct connection_state_traits<vda5050_types::ConnectionState>
     }
   }
 
-  static vda5050_types::ConnectionState from_string(const std::string& state)
+  static types::ConnectionState from_string(const std::string& state)
   {
-    using vda5050_types::ConnectionState;
+    using types::ConnectionState;
 
     if (state == "ONLINE") return ConnectionState::ONLINE;
     if (state == "OFFLINE") return ConnectionState::OFFLINE;
@@ -362,11 +363,11 @@ struct operating_mode_traits;
 
 //=============================================================================
 template <>
-struct operating_mode_traits<vda5050_types::OperatingMode>
+struct operating_mode_traits<types::OperatingMode>
 {
-  static std::string to_string(const vda5050_types::OperatingMode& mode)
+  static std::string to_string(const types::OperatingMode& mode)
   {
-    using vda5050_types::OperatingMode;
+    using types::OperatingMode;
 
     switch (mode)
     {
@@ -385,9 +386,9 @@ struct operating_mode_traits<vda5050_types::OperatingMode>
     }
   }
 
-  static vda5050_types::OperatingMode from_string(const std::string& mode)
+  static types::OperatingMode from_string(const std::string& mode)
   {
-    using vda5050_types::OperatingMode;
+    using types::OperatingMode;
 
     if (mode == "AUTOMATIC") return OperatingMode::AUTOMATIC;
     if (mode == "SEMIAUTOMATIC") return OperatingMode::SEMIAUTOMATIC;
@@ -443,11 +444,11 @@ struct action_status_traits;
 
 //=============================================================================
 template <>
-struct action_status_traits<vda5050_types::ActionStatus>
+struct action_status_traits<types::ActionStatus>
 {
-  static std::string to_string(const vda5050_types::ActionStatus& status)
+  static std::string to_string(const types::ActionStatus& status)
   {
-    using vda5050_types::ActionStatus;
+    using types::ActionStatus;
 
     switch (status)
     {
@@ -468,9 +469,9 @@ struct action_status_traits<vda5050_types::ActionStatus>
     }
   }
 
-  static vda5050_types::ActionStatus from_string(const std::string& status)
+  static types::ActionStatus from_string(const std::string& status)
   {
-    using vda5050_types::ActionStatus;
+    using types::ActionStatus;
 
     if (status == "WAITING") return ActionStatus::WAITING;
     if (status == "INITIALIZING") return ActionStatus::INITIALIZING;
@@ -529,11 +530,11 @@ struct error_level_traits;
 
 //=============================================================================
 template <>
-struct error_level_traits<vda5050_types::ErrorLevel>
+struct error_level_traits<types::ErrorLevel>
 {
-  static std::string to_string(const vda5050_types::ErrorLevel& level)
+  static std::string to_string(const types::ErrorLevel& level)
   {
-    using vda5050_types::ErrorLevel;
+    using types::ErrorLevel;
 
     switch (level)
     {
@@ -546,9 +547,9 @@ struct error_level_traits<vda5050_types::ErrorLevel>
     }
   }
 
-  static vda5050_types::ErrorLevel from_string(const std::string& level)
+  static types::ErrorLevel from_string(const std::string& level)
   {
-    using vda5050_types::ErrorLevel;
+    using types::ErrorLevel;
 
     if (level == "WARNING") return ErrorLevel::WARNING;
     if (level == "FATAL") return ErrorLevel::FATAL;
@@ -593,11 +594,11 @@ struct e_stop_traits;
 
 //=============================================================================
 template <>
-struct e_stop_traits<vda5050_types::EStop>
+struct e_stop_traits<types::EStop>
 {
-  static std::string to_string(const vda5050_types::EStop& type)
+  static std::string to_string(const types::EStop& type)
   {
-    using vda5050_types::EStop;
+    using types::EStop;
 
     switch (type)
     {
@@ -614,9 +615,9 @@ struct e_stop_traits<vda5050_types::EStop>
     }
   }
 
-  static vda5050_types::EStop from_string(const std::string& type)
+  static types::EStop from_string(const std::string& type)
   {
-    using vda5050_types::EStop;
+    using types::EStop;
 
     if (type == "AUTOACK") return EStop::AUTOACK;
     if (type == "MANUAL") return EStop::MANUAL;
@@ -667,11 +668,11 @@ struct info_level_traits;
 
 //=============================================================================
 template <>
-struct info_level_traits<vda5050_types::InfoLevel>
+struct info_level_traits<types::InfoLevel>
 {
-  static std::string to_string(const vda5050_types::InfoLevel& level)
+  static std::string to_string(const types::InfoLevel& level)
   {
-    using vda5050_types::InfoLevel;
+    using types::InfoLevel;
 
     switch (level)
     {
@@ -684,9 +685,9 @@ struct info_level_traits<vda5050_types::InfoLevel>
     }
   }
 
-  static vda5050_types::InfoLevel from_string(const std::string& level)
+  static types::InfoLevel from_string(const std::string& level)
   {
-    using vda5050_types::InfoLevel;
+    using types::InfoLevel;
 
     if (level == "INFO") return InfoLevel::INFO;
     if (level == "DEBUG") return InfoLevel::DEBUG;
@@ -729,11 +730,11 @@ struct blocking_type_traits;
 
 //=============================================================================
 template <>
-struct blocking_type_traits<vda5050_types::BlockingType>
+struct blocking_type_traits<types::BlockingType>
 {
-  static std::string to_string(const vda5050_types::BlockingType& type)
+  static std::string to_string(const types::BlockingType& type)
   {
-    using vda5050_types::BlockingType;
+    using types::BlockingType;
 
     switch (type)
     {
@@ -748,9 +749,9 @@ struct blocking_type_traits<vda5050_types::BlockingType>
     }
   }
 
-  static vda5050_types::BlockingType from_string(const std::string& type)
+  static types::BlockingType from_string(const std::string& type)
   {
-    using vda5050_types::BlockingType;
+    using types::BlockingType;
 
     if (type == "NONE") return BlockingType::NONE;
     if (type == "SOFT") return BlockingType::SOFT;
@@ -800,11 +801,11 @@ struct orientation_type_traits;
 
 //=============================================================================
 template <>
-struct orientation_type_traits<vda5050_types::OrientationType>
+struct orientation_type_traits<types::OrientationType>
 {
-  static std::string to_string(const vda5050_types::OrientationType& type)
+  static std::string to_string(const types::OrientationType& type)
   {
-    using vda5050_types::OrientationType;
+    using types::OrientationType;
 
     switch (type)
     {
@@ -817,9 +818,9 @@ struct orientation_type_traits<vda5050_types::OrientationType>
     }
   }
 
-  static vda5050_types::OrientationType from_string(const std::string& type)
+  static types::OrientationType from_string(const std::string& type)
   {
-    using vda5050_types::OrientationType;
+    using types::OrientationType;
 
     if (type == "GLOBAL") return OrientationType::GLOBAL;
     if (type == "TANGENTIAL") return OrientationType::TANGENTIAL;
@@ -866,11 +867,11 @@ struct agv_kinematic_traits;
 
 //=============================================================================
 template <>
-struct agv_kinematic_traits<vda5050_types::AGVKinematic>
+struct agv_kinematic_traits<types::AGVKinematic>
 {
-  static std::string to_string(const vda5050_types::AGVKinematic& type)
+  static std::string to_string(const types::AGVKinematic& type)
   {
-    using vda5050_types::AGVKinematic;
+    using types::AGVKinematic;
 
     switch (type)
     {
@@ -885,9 +886,9 @@ struct agv_kinematic_traits<vda5050_types::AGVKinematic>
     }
   }
 
-  static vda5050_types::AGVKinematic from_string(const std::string& type)
+  static types::AGVKinematic from_string(const std::string& type)
   {
-    using vda5050_types::AGVKinematic;
+    using types::AGVKinematic;
 
     if (type == "DIFF") return AGVKinematic::DIFF;
     if (type == "OMNI") return AGVKinematic::OMNI;
@@ -937,11 +938,11 @@ struct agv_class_traits;
 
 //=============================================================================
 template <>
-struct agv_class_traits<vda5050_types::AGVClass>
+struct agv_class_traits<types::AGVClass>
 {
-  static std::string to_string(const vda5050_types::AGVClass& type)
+  static std::string to_string(const types::AGVClass& type)
   {
-    using vda5050_types::AGVClass;
+    using types::AGVClass;
 
     switch (type)
     {
@@ -958,9 +959,9 @@ struct agv_class_traits<vda5050_types::AGVClass>
     }
   }
 
-  static vda5050_types::AGVClass from_string(const std::string& type)
+  static types::AGVClass from_string(const std::string& type)
   {
-    using vda5050_types::AGVClass;
+    using types::AGVClass;
 
     if (type == "FORKLIFT") return AGVClass::FORKLIFT;
     if (type == "CONVEYOR") return AGVClass::CONVEYOR;
@@ -1013,11 +1014,11 @@ struct support_traits;
 
 //=============================================================================
 template <>
-struct support_traits<vda5050_types::Support>
+struct support_traits<types::Support>
 {
-  static std::string to_string(const vda5050_types::Support& type)
+  static std::string to_string(const types::Support& type)
   {
-    using vda5050_types::Support;
+    using types::Support;
 
     switch (type)
     {
@@ -1030,9 +1031,9 @@ struct support_traits<vda5050_types::Support>
     }
   }
 
-  static vda5050_types::Support from_string(const std::string& type)
+  static types::Support from_string(const std::string& type)
   {
-    using vda5050_types::Support;
+    using types::Support;
 
     if (type == "SUPPORTED") return Support::SUPPORTED;
     if (type == "REQUIRED") return Support::REQUIRED;
@@ -1079,12 +1080,12 @@ struct action_scopes_traits;
 
 //=============================================================================
 template <>
-struct action_scopes_traits<std::vector<vda5050_types::ActionScope>>
+struct action_scopes_traits<std::vector<types::ActionScope>>
 {
   static std::vector<std::string> to_string(
-    const std::vector<vda5050_types::ActionScope>& types)
+    const std::vector<types::ActionScope>& types)
   {
-    using vda5050_types::ActionScope;
+    using types::ActionScope;
 
     std::vector<std::string> output;
     for (const auto& type : types)
@@ -1107,12 +1108,12 @@ struct action_scopes_traits<std::vector<vda5050_types::ActionScope>>
     return output;
   }
 
-  static std::vector<vda5050_types::ActionScope> from_string(
+  static std::vector<types::ActionScope> from_string(
     const std::vector<std::string>& types)
   {
-    using vda5050_types::ActionScope;
+    using types::ActionScope;
 
-    std::vector<vda5050_types::ActionScope> output;
+    std::vector<types::ActionScope> output;
     for (const auto& type : types)
     {
       if (type == "INSTANT")
@@ -1177,11 +1178,11 @@ struct value_data_type_traits;
 
 //=============================================================================
 template <>
-struct value_data_type_traits<vda5050_types::ValueDataType>
+struct value_data_type_traits<types::ValueDataType>
 {
-  static std::string to_string(const vda5050_types::ValueDataType& type)
+  static std::string to_string(const types::ValueDataType& type)
   {
-    using vda5050_types::ValueDataType;
+    using types::ValueDataType;
 
     switch (type)
     {
@@ -1204,9 +1205,9 @@ struct value_data_type_traits<vda5050_types::ValueDataType>
     }
   }
 
-  static vda5050_types::ValueDataType from_string(const std::string& type)
+  static types::ValueDataType from_string(const std::string& type)
   {
-    using vda5050_types::ValueDataType;
+    using types::ValueDataType;
 
     if (type == "BOOL") return ValueDataType::BOOL;
     if (type == "NUMBER") return ValueDataType::NUMBER;
@@ -1268,12 +1269,12 @@ struct blocking_types_traits;
 
 //=============================================================================
 template <>
-struct blocking_types_traits<std::vector<vda5050_types::BlockingType>>
+struct blocking_types_traits<std::vector<types::BlockingType>>
 {
   static std::vector<std::string> to_string(
-    const std::vector<vda5050_types::BlockingType>& types)
+    const std::vector<types::BlockingType>& types)
   {
-    using vda5050_types::BlockingType;
+    using types::BlockingType;
 
     std::vector<std::string> output;
     for (const auto& type : types)
@@ -1296,12 +1297,12 @@ struct blocking_types_traits<std::vector<vda5050_types::BlockingType>>
     return output;
   }
 
-  static std::vector<vda5050_types::BlockingType> from_string(
+  static std::vector<types::BlockingType> from_string(
     const std::vector<std::string>& types)
   {
-    using vda5050_types::BlockingType;
+    using types::BlockingType;
 
-    std::vector<vda5050_types::BlockingType> output;
+    std::vector<types::BlockingType> output;
     for (const auto& type : types)
     {
       if (type == "NONE")
@@ -1366,11 +1367,11 @@ struct wheel_definition_type_traits;
 
 //=============================================================================
 template <>
-struct wheel_definition_type_traits<vda5050_types::WheelDefinitionType>
+struct wheel_definition_type_traits<types::WheelDefinitionType>
 {
-  static std::string to_string(const vda5050_types::WheelDefinitionType& type)
+  static std::string to_string(const types::WheelDefinitionType& type)
   {
-    using vda5050_types::WheelDefinitionType;
+    using types::WheelDefinitionType;
 
     switch (type)
     {
@@ -1387,9 +1388,9 @@ struct wheel_definition_type_traits<vda5050_types::WheelDefinitionType>
     }
   }
 
-  static vda5050_types::WheelDefinitionType from_string(const std::string& type)
+  static types::WheelDefinitionType from_string(const std::string& type)
   {
-    using vda5050_types::WheelDefinitionType;
+    using types::WheelDefinitionType;
 
     if (type == "DRIVE") return WheelDefinitionType::DRIVE;
     if (type == "CASTER") return WheelDefinitionType::CASTER;
@@ -1436,6 +1437,7 @@ struct wheel_definition_type_traits<std::string>
 };
 #endif  // ENABLE_ROS2
 
-}  // namespace vda5050_json_utils
+}  // namespace json_utils
+}  // namespace vda5050_core
 
-#endif  // VDA5050_JSON_UTILS__TRAITS_HPP_
+#endif  // VDA5050_CORE__JSON_UTILS__TRAITS_HPP_

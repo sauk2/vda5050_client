@@ -16,60 +16,60 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_JSON_UTILS__SERIALIZATION_HPP_
-#define VDA5050_JSON_UTILS__SERIALIZATION_HPP_
+#ifndef VDA5050_CORE__JSON_UTILS__SERIALIZATION_HPP_
+#define VDA5050_CORE__JSON_UTILS__SERIALIZATION_HPP_
 
 #include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include <vda5050_types/action.hpp>
-#include <vda5050_types/action_parameter.hpp>
-#include <vda5050_types/action_parameter_factsheet.hpp>
-#include <vda5050_types/action_state.hpp>
-#include <vda5050_types/agv_action.hpp>
-#include <vda5050_types/agv_geometry.hpp>
-#include <vda5050_types/agv_position.hpp>
-#include <vda5050_types/battery_state.hpp>
-#include <vda5050_types/bounding_box_reference.hpp>
-#include <vda5050_types/connection.hpp>
-#include <vda5050_types/control_point.hpp>
-#include <vda5050_types/edge.hpp>
-#include <vda5050_types/edge_state.hpp>
-#include <vda5050_types/envelope2d.hpp>
-#include <vda5050_types/envelope3d.hpp>
-#include <vda5050_types/error.hpp>
-#include <vda5050_types/error_reference.hpp>
-#include <vda5050_types/factsheet.hpp>
-#include <vda5050_types/header.hpp>
-#include <vda5050_types/info.hpp>
-#include <vda5050_types/info_reference.hpp>
-#include <vda5050_types/instant_actions.hpp>
-#include <vda5050_types/load.hpp>
-#include <vda5050_types/load_dimensions.hpp>
-#include <vda5050_types/load_set.hpp>
-#include <vda5050_types/load_specification.hpp>
-#include <vda5050_types/max_array_lens.hpp>
-#include <vda5050_types/max_string_lens.hpp>
-#include <vda5050_types/node.hpp>
-#include <vda5050_types/node_position.hpp>
-#include <vda5050_types/node_state.hpp>
-#include <vda5050_types/optional_parameter.hpp>
-#include <vda5050_types/order.hpp>
-#include <vda5050_types/physical_parameters.hpp>
-#include <vda5050_types/polygon_point.hpp>
-#include <vda5050_types/position.hpp>
-#include <vda5050_types/protocol_features.hpp>
-#include <vda5050_types/protocol_limits.hpp>
-#include <vda5050_types/safety_state.hpp>
-#include <vda5050_types/state.hpp>
-#include <vda5050_types/timing.hpp>
-#include <vda5050_types/trajectory.hpp>
-#include <vda5050_types/type_specification.hpp>
-#include <vda5050_types/velocity.hpp>
-#include <vda5050_types/visualization.hpp>
-#include <vda5050_types/wheel_definition.hpp>
+#include "vda5050_core/types/action.hpp"
+#include "vda5050_core/types/action_parameter.hpp"
+#include "vda5050_core/types/action_parameter_factsheet.hpp"
+#include "vda5050_core/types/action_state.hpp"
+#include "vda5050_core/types/agv_action.hpp"
+#include "vda5050_core/types/agv_geometry.hpp"
+#include "vda5050_core/types/agv_position.hpp"
+#include "vda5050_core/types/battery_state.hpp"
+#include "vda5050_core/types/bounding_box_reference.hpp"
+#include "vda5050_core/types/connection.hpp"
+#include "vda5050_core/types/control_point.hpp"
+#include "vda5050_core/types/edge.hpp"
+#include "vda5050_core/types/edge_state.hpp"
+#include "vda5050_core/types/envelope2d.hpp"
+#include "vda5050_core/types/envelope3d.hpp"
+#include "vda5050_core/types/error.hpp"
+#include "vda5050_core/types/error_reference.hpp"
+#include "vda5050_core/types/factsheet.hpp"
+#include "vda5050_core/types/header.hpp"
+#include "vda5050_core/types/info.hpp"
+#include "vda5050_core/types/info_reference.hpp"
+#include "vda5050_core/types/instant_actions.hpp"
+#include "vda5050_core/types/load.hpp"
+#include "vda5050_core/types/load_dimensions.hpp"
+#include "vda5050_core/types/load_set.hpp"
+#include "vda5050_core/types/load_specification.hpp"
+#include "vda5050_core/types/max_array_lens.hpp"
+#include "vda5050_core/types/max_string_lens.hpp"
+#include "vda5050_core/types/node.hpp"
+#include "vda5050_core/types/node_position.hpp"
+#include "vda5050_core/types/node_state.hpp"
+#include "vda5050_core/types/optional_parameter.hpp"
+#include "vda5050_core/types/order.hpp"
+#include "vda5050_core/types/physical_parameters.hpp"
+#include "vda5050_core/types/polygon_point.hpp"
+#include "vda5050_core/types/position.hpp"
+#include "vda5050_core/types/protocol_features.hpp"
+#include "vda5050_core/types/protocol_limits.hpp"
+#include "vda5050_core/types/safety_state.hpp"
+#include "vda5050_core/types/state.hpp"
+#include "vda5050_core/types/timing.hpp"
+#include "vda5050_core/types/trajectory.hpp"
+#include "vda5050_core/types/type_specification.hpp"
+#include "vda5050_core/types/velocity.hpp"
+#include "vda5050_core/types/visualization.hpp"
+#include "vda5050_core/types/wheel_definition.hpp"
 
 #ifdef ENABLE_ROS2
 #include <vda5050_interfaces/msg/action.hpp>
@@ -122,7 +122,9 @@
 
 #include "traits.hpp"
 
-namespace vda5050_types {
+namespace vda5050_core {
+
+namespace types {
 
 namespace action_detail {
 
@@ -130,8 +132,8 @@ namespace action_detail {
 template <typename ActionT>
 void to_json(nlohmann::json& j, const ActionT& msg)
 {
-  using vda5050_json_utils::blocking_type_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::blocking_type_traits;
+  using json_utils::optional_field_traits;
 
   using action_description_trait =
     optional_field_traits<decltype(msg.action_description)>;
@@ -161,8 +163,8 @@ void to_json(nlohmann::json& j, const ActionT& msg)
 template <typename ActionT>
 void from_json(const nlohmann::json& j, ActionT& msg)
 {
-  using vda5050_json_utils::blocking_type_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::blocking_type_traits;
+  using json_utils::optional_field_traits;
 
   using action_description_trait =
     optional_field_traits<decltype(msg.action_description)>;
@@ -216,8 +218,8 @@ namespace action_parameter_factsheet_detail {
 template <typename ActionParameterFactsheetT>
 void to_json(nlohmann::json& j, const ActionParameterFactsheetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::value_data_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::value_data_type_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
   using is_optional_trait = optional_field_traits<decltype(msg.is_optional)>;
@@ -243,8 +245,8 @@ void to_json(nlohmann::json& j, const ActionParameterFactsheetT& msg)
 template <typename ActionParameterFactsheetT>
 void from_json(const nlohmann::json& j, ActionParameterFactsheetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::value_data_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::value_data_type_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
   using is_optional_trait = optional_field_traits<decltype(msg.is_optional)>;
@@ -275,8 +277,8 @@ namespace action_state_detail {
 template <typename ActionStateT>
 void to_json(nlohmann::json& j, const ActionStateT& msg)
 {
-  using vda5050_json_utils::action_status_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::action_status_traits;
+  using json_utils::optional_field_traits;
 
   using action_type_trait = optional_field_traits<decltype(msg.action_type)>;
   using action_description_trait =
@@ -312,8 +314,8 @@ void to_json(nlohmann::json& j, const ActionStateT& msg)
 template <typename ActionStateT>
 void from_json(const nlohmann::json& j, ActionStateT& msg)
 {
-  using vda5050_json_utils::action_status_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::action_status_traits;
+  using json_utils::optional_field_traits;
 
   using action_type_trait = optional_field_traits<decltype(msg.action_type)>;
   using action_description_trait =
@@ -354,9 +356,9 @@ namespace agv_action_detail {
 template <typename AGVActionT>
 void to_json(nlohmann::json& j, const AGVActionT& msg)
 {
-  using vda5050_json_utils::action_scopes_traits;
-  using vda5050_json_utils::blocking_types_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::action_scopes_traits;
+  using json_utils::blocking_types_traits;
+  using json_utils::optional_field_traits;
 
   using action_parameters_trait =
     optional_field_traits<decltype(msg.action_parameters)>;
@@ -404,9 +406,9 @@ void to_json(nlohmann::json& j, const AGVActionT& msg)
 template <typename AGVActionT>
 void from_json(const nlohmann::json& j, AGVActionT& msg)
 {
-  using vda5050_json_utils::action_scopes_traits;
-  using vda5050_json_utils::blocking_types_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::action_scopes_traits;
+  using json_utils::blocking_types_traits;
+  using json_utils::optional_field_traits;
 
   using action_parameters_trait =
     optional_field_traits<decltype(msg.action_parameters)>;
@@ -459,7 +461,7 @@ namespace agv_geometry_detail {
 template <typename AGVGeometryT>
 void to_json(nlohmann::json& j, const AGVGeometryT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using wheel_definitions_trait =
     optional_field_traits<decltype(msg.wheel_definitions)>;
@@ -486,7 +488,7 @@ void to_json(nlohmann::json& j, const AGVGeometryT& msg)
 template <typename AGVGeometryT>
 void from_json(const nlohmann::json& j, AGVGeometryT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using wheel_definitions_trait =
     optional_field_traits<decltype(msg.wheel_definitions)>;
@@ -518,7 +520,7 @@ namespace agv_position_detail {
 template <typename AGVPositionT>
 void to_json(nlohmann::json& j, const AGVPositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using map_description_trait =
     optional_field_traits<decltype(msg.map_description)>;
@@ -554,7 +556,7 @@ void to_json(nlohmann::json& j, const AGVPositionT& msg)
 template <typename AGVPositionT>
 void from_json(const nlohmann::json& j, AGVPositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using map_description_trait =
     optional_field_traits<decltype(msg.map_description)>;
@@ -596,7 +598,7 @@ namespace battery_state_detail {
 template <typename BatteryStateT>
 void to_json(nlohmann::json& j, const BatteryStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using battery_voltage_trait =
     optional_field_traits<decltype(msg.battery_voltage)>;
@@ -627,7 +629,7 @@ void to_json(nlohmann::json& j, const BatteryStateT& msg)
 template <typename BatteryStateT>
 void from_json(const nlohmann::json& j, BatteryStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using battery_voltage_trait =
     optional_field_traits<decltype(msg.battery_voltage)>;
@@ -664,7 +666,7 @@ namespace bounding_box_reference_detail {
 template <typename BoundingBoxReferenceT>
 void to_json(nlohmann::json& j, const BoundingBoxReferenceT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
 
@@ -682,7 +684,7 @@ void to_json(nlohmann::json& j, const BoundingBoxReferenceT& msg)
 template <typename BoundingBoxReferenceT>
 void from_json(const nlohmann::json& j, BoundingBoxReferenceT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
 
@@ -704,7 +706,7 @@ namespace connection_detail {
 template <typename ConnectionT>
 void to_json(nlohmann::json& j, const ConnectionT& msg)
 {
-  using vda5050_json_utils::connection_state_traits;
+  using json_utils::connection_state_traits;
 
   to_json(j, msg.header);
 
@@ -717,7 +719,7 @@ void to_json(nlohmann::json& j, const ConnectionT& msg)
 template <typename ConnectionT>
 void from_json(const nlohmann::json& j, ConnectionT& msg)
 {
-  using vda5050_json_utils::connection_state_traits;
+  using json_utils::connection_state_traits;
 
   from_json(j, msg.header);
 
@@ -760,8 +762,8 @@ namespace edge_detail {
 template <typename EdgeT>
 void to_json(nlohmann::json& j, const EdgeT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::orientation_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::orientation_type_traits;
 
   using edge_description_trait =
     optional_field_traits<decltype(msg.edge_description)>;
@@ -851,8 +853,8 @@ void to_json(nlohmann::json& j, const EdgeT& msg)
 template <typename EdgeT>
 void from_json(const nlohmann::json& j, EdgeT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::orientation_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::orientation_type_traits;
 
   using edge_description_trait =
     optional_field_traits<decltype(msg.edge_description)>;
@@ -948,7 +950,7 @@ namespace edge_state_detail {
 template <typename EdgeStateT>
 void to_json(nlohmann::json& j, const EdgeStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using edge_description_trait =
     optional_field_traits<decltype(msg.edge_description)>;
@@ -973,7 +975,7 @@ void to_json(nlohmann::json& j, const EdgeStateT& msg)
 template <typename EdgeStateT>
 void from_json(const nlohmann::json& j, EdgeStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using edge_description_trait =
     optional_field_traits<decltype(msg.edge_description)>;
@@ -1003,7 +1005,7 @@ namespace envelope2d_detail {
 template <typename Envelope2dT>
 void to_json(nlohmann::json& j, const Envelope2dT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
 
@@ -1020,7 +1022,7 @@ void to_json(nlohmann::json& j, const Envelope2dT& msg)
 template <typename Envelope2dT>
 void from_json(const nlohmann::json& j, Envelope2dT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
 
@@ -1042,7 +1044,7 @@ namespace envelope3d_detail {
 template <typename Envelope3dT>
 void to_json(nlohmann::json& j, const Envelope3dT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using data_trait = optional_field_traits<decltype(msg.data)>;
   using url_trait = optional_field_traits<decltype(msg.url)>;
@@ -1071,7 +1073,7 @@ void to_json(nlohmann::json& j, const Envelope3dT& msg)
 template <typename Envelope3dT>
 void from_json(const nlohmann::json& j, Envelope3dT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using data_trait = optional_field_traits<decltype(msg.data)>;
   using url_trait = optional_field_traits<decltype(msg.url)>;
@@ -1105,8 +1107,8 @@ namespace error_detail {
 template <typename ErrorT>
 void to_json(nlohmann::json& j, const ErrorT& msg)
 {
-  using vda5050_json_utils::error_level_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::error_level_traits;
+  using json_utils::optional_field_traits;
 
   using error_references_trait =
     optional_field_traits<decltype(msg.error_references)>;
@@ -1133,8 +1135,8 @@ void to_json(nlohmann::json& j, const ErrorT& msg)
 template <typename ErrorT>
 void from_json(const nlohmann::json& j, ErrorT& msg)
 {
-  using vda5050_json_utils::error_level_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::error_level_traits;
+  using json_utils::optional_field_traits;
 
   using error_references_trait =
     optional_field_traits<decltype(msg.error_references)>;
@@ -1186,7 +1188,7 @@ namespace factsheet_detail {
 template <typename FactsheetT>
 void to_json(nlohmann::json& j, const FactsheetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using localization_parameter_trait =
     optional_field_traits<decltype(msg.localization_parameters)>;
@@ -1211,7 +1213,7 @@ void to_json(nlohmann::json& j, const FactsheetT& msg)
 template <typename FactsheetT>
 void from_json(const nlohmann::json& j, FactsheetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using localization_parameter_trait =
     optional_field_traits<decltype(msg.localization_parameters)>;
@@ -1241,7 +1243,7 @@ namespace header_detail {
 template <typename HeaderT>
 void to_json(nlohmann::json& j, const HeaderT& msg)
 {
-  using vda5050_json_utils::timestamp_traits;
+  using json_utils::timestamp_traits;
 
   j = nlohmann::json{
     {"headerId", msg.header_id},
@@ -1256,7 +1258,7 @@ void to_json(nlohmann::json& j, const HeaderT& msg)
 template <typename HeaderT>
 void from_json(const nlohmann::json& j, HeaderT& msg)
 {
-  using vda5050_json_utils::timestamp_traits;
+  using json_utils::timestamp_traits;
 
   msg.header_id = j.at("headerId").get<uint32_t>();
   msg.timestamp = timestamp_traits<decltype(msg.timestamp)>::from_string(
@@ -1274,8 +1276,8 @@ namespace info_detail {
 template <typename InfoT>
 void to_json(nlohmann::json& j, const InfoT& msg)
 {
-  using vda5050_json_utils::info_level_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::info_level_traits;
+  using json_utils::optional_field_traits;
 
   using info_references_trait =
     optional_field_traits<decltype(msg.info_references)>;
@@ -1302,8 +1304,8 @@ void to_json(nlohmann::json& j, const InfoT& msg)
 template <typename InfoT>
 void from_json(const nlohmann::json& j, InfoT& msg)
 {
-  using vda5050_json_utils::info_level_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::info_level_traits;
+  using json_utils::optional_field_traits;
 
   using info_references_trait =
     optional_field_traits<decltype(msg.info_references)>;
@@ -1377,7 +1379,7 @@ namespace load_detail {
 template <typename LoadT>
 void to_json(nlohmann::json& j, const LoadT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_id_trait = optional_field_traits<decltype(msg.load_id)>;
   using load_type_trait = optional_field_traits<decltype(msg.load_type)>;
@@ -1425,7 +1427,7 @@ void to_json(nlohmann::json& j, const LoadT& msg)
 template <typename LoadT>
 void from_json(const nlohmann::json& j, LoadT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_id_trait = optional_field_traits<decltype(msg.load_id)>;
   using load_type_trait = optional_field_traits<decltype(msg.load_type)>;
@@ -1478,7 +1480,7 @@ namespace load_dimensions_detail {
 template <typename LoadDimensionsT>
 void to_json(nlohmann::json& j, const LoadDimensionsT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using height_trait = optional_field_traits<decltype(msg.height)>;
 
@@ -1495,7 +1497,7 @@ void to_json(nlohmann::json& j, const LoadDimensionsT& msg)
 template <typename LoadDimensionsT>
 void from_json(const nlohmann::json& j, LoadDimensionsT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using height_trait = optional_field_traits<decltype(msg.height)>;
 
@@ -1516,7 +1518,7 @@ namespace load_set_detail {
 template <typename LoadSetT>
 void to_json(nlohmann::json& j, const LoadSetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_positions_trait =
     optional_field_traits<decltype(msg.load_positions)>;
@@ -1644,7 +1646,7 @@ void to_json(nlohmann::json& j, const LoadSetT& msg)
 template <typename LoadSetT>
 void from_json(const nlohmann::json& j, LoadSetT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_positions_trait =
     optional_field_traits<decltype(msg.load_positions)>;
@@ -1782,7 +1784,7 @@ namespace load_specification_detail {
 template <typename LoadSpecificationT>
 void to_json(nlohmann::json& j, const LoadSpecificationT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_positions_trait =
     optional_field_traits<decltype(msg.load_positions)>;
@@ -1803,7 +1805,7 @@ void to_json(nlohmann::json& j, const LoadSpecificationT& msg)
 template <typename LoadSpecificationT>
 void from_json(const nlohmann::json& j, LoadSpecificationT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using load_positions_trait =
     optional_field_traits<decltype(msg.load_positions)>;
@@ -1830,7 +1832,7 @@ namespace max_array_lens_detail {
 template <typename MaxArrayLensT>
 void to_json(nlohmann::json& j, const MaxArrayLensT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using order_nodes_trait = optional_field_traits<decltype(msg.order_nodes)>;
   using order_edges_trait = optional_field_traits<decltype(msg.order_edges)>;
@@ -1953,7 +1955,7 @@ void to_json(nlohmann::json& j, const MaxArrayLensT& msg)
 template <typename MaxArrayLensT>
 void from_json(const nlohmann::json& j, MaxArrayLensT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using order_nodes_trait = optional_field_traits<decltype(msg.order_nodes)>;
   using order_edges_trait = optional_field_traits<decltype(msg.order_edges)>;
@@ -2092,7 +2094,7 @@ namespace max_string_lens_detail {
 template <typename MaxStringLensT>
 void to_json(nlohmann::json& j, const MaxStringLensT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using msg_len_trait = optional_field_traits<decltype(msg.msg_len)>;
   using topic_serial_len_trait =
@@ -2145,7 +2147,7 @@ void to_json(nlohmann::json& j, const MaxStringLensT& msg)
 template <typename MaxStringLensT>
 void from_json(const nlohmann::json& j, MaxStringLensT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using msg_len_trait = optional_field_traits<decltype(msg.msg_len)>;
   using topic_serial_len_trait =
@@ -2205,7 +2207,7 @@ namespace node_detail {
 template <typename NodeT>
 void to_json(nlohmann::json& j, const NodeT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using node_position_trait =
     optional_field_traits<decltype(msg.node_position)>;
@@ -2232,7 +2234,7 @@ void to_json(nlohmann::json& j, const NodeT& msg)
 template <typename NodeT>
 void from_json(const nlohmann::json& j, NodeT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using node_position_trait =
     optional_field_traits<decltype(msg.node_position)>;
@@ -2264,7 +2266,7 @@ namespace node_position_detail {
 template <typename NodePositionT>
 void to_json(nlohmann::json& j, const NodePositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
   using allowed_deviation_x_y_trait =
@@ -2305,7 +2307,7 @@ void to_json(nlohmann::json& j, const NodePositionT& msg)
 template <typename NodePositionT>
 void from_json(const nlohmann::json& j, NodePositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
   using allowed_deviation_x_y_trait =
@@ -2351,7 +2353,7 @@ namespace node_state_detail {
 template <typename NodeStateT>
 void to_json(nlohmann::json& j, const NodeStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using node_description_trait =
     optional_field_traits<decltype(msg.node_description)>;
@@ -2377,7 +2379,7 @@ void to_json(nlohmann::json& j, const NodeStateT& msg)
 template <typename NodeStateT>
 void from_json(const nlohmann::json& j, NodeStateT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using node_description_trait =
     optional_field_traits<decltype(msg.node_description)>;
@@ -2408,8 +2410,8 @@ namespace optional_parameter_detail {
 template <typename OptionalParameterT>
 void to_json(nlohmann::json& j, const OptionalParameterT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::support_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::support_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
 
@@ -2426,8 +2428,8 @@ void to_json(nlohmann::json& j, const OptionalParameterT& msg)
 template <typename OptionalParameterT>
 void from_json(const nlohmann::json& j, OptionalParameterT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::support_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::support_traits;
 
   using description_trait = optional_field_traits<decltype(msg.description)>;
 
@@ -2450,7 +2452,7 @@ namespace order_detail {
 template <typename OrderT>
 void to_json(nlohmann::json& j, const OrderT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using zone_set_id_trait = optional_field_traits<decltype(msg.zone_set_id)>;
 
@@ -2471,7 +2473,7 @@ void to_json(nlohmann::json& j, const OrderT& msg)
 template <typename OrderT>
 void from_json(const nlohmann::json& j, OrderT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using zone_set_id_trait = optional_field_traits<decltype(msg.zone_set_id)>;
 
@@ -2497,7 +2499,7 @@ namespace physical_parameters_detail {
 template <typename PhysicalParametersT>
 void to_json(nlohmann::json& j, const PhysicalParametersT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using angular_speed_min_trait =
     optional_field_traits<decltype(msg.angular_speed_min)>;
@@ -2528,7 +2530,7 @@ void to_json(nlohmann::json& j, const PhysicalParametersT& msg)
 template <typename PhysicalParametersT>
 void from_json(const nlohmann::json& j, PhysicalParametersT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using angular_speed_min_trait =
     optional_field_traits<decltype(msg.angular_speed_min)>;
@@ -2585,7 +2587,7 @@ namespace position_detail {
 template <typename PositionT>
 void to_json(nlohmann::json& j, const PositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
 
@@ -2602,7 +2604,7 @@ void to_json(nlohmann::json& j, const PositionT& msg)
 template <typename PositionT>
 void from_json(const nlohmann::json& j, PositionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using theta_trait = optional_field_traits<decltype(msg.theta)>;
 
@@ -2665,7 +2667,7 @@ namespace safety_state_detail {
 template <typename SafetyStateT>
 void to_json(nlohmann::json& j, const SafetyStateT& msg)
 {
-  using vda5050_json_utils::e_stop_traits;
+  using json_utils::e_stop_traits;
 
   j["eStop"] = e_stop_traits<decltype(msg.e_stop)>::to_string(msg.e_stop);
 
@@ -2676,7 +2678,7 @@ void to_json(nlohmann::json& j, const SafetyStateT& msg)
 template <typename SafetyStateT>
 void from_json(const nlohmann::json& j, SafetyStateT& msg)
 {
-  using vda5050_json_utils::e_stop_traits;
+  using json_utils::e_stop_traits;
 
   msg.e_stop = e_stop_traits<decltype(msg.e_stop)>::from_string(
     j.at("eStop").get<std::string>());
@@ -2692,8 +2694,8 @@ namespace state_detail {
 template <typename StateT>
 void to_json(nlohmann::json& j, const StateT& msg)
 {
-  using vda5050_json_utils::operating_mode_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::operating_mode_traits;
+  using json_utils::optional_field_traits;
 
   using zone_set_id_trait = optional_field_traits<decltype(msg.zone_set_id)>;
   using paused_trait = optional_field_traits<decltype(msg.paused)>;
@@ -2771,8 +2773,8 @@ void to_json(nlohmann::json& j, const StateT& msg)
 template <typename StateT>
 void from_json(const nlohmann::json& j, StateT& msg)
 {
-  using vda5050_json_utils::operating_mode_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::operating_mode_traits;
+  using json_utils::optional_field_traits;
 
   using zone_set_id_trait = optional_field_traits<decltype(msg.zone_set_id)>;
   using paused_trait = optional_field_traits<decltype(msg.paused)>;
@@ -2857,7 +2859,7 @@ namespace timing_detail {
 template <typename TimingT>
 void to_json(nlohmann::json& j, const TimingT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using default_state_interval_trait =
     optional_field_traits<decltype(msg.default_state_interval)>;
@@ -2884,7 +2886,7 @@ void to_json(nlohmann::json& j, const TimingT& msg)
 template <typename TimingT>
 void from_json(const nlohmann::json& j, TimingT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using default_state_interval_trait =
     optional_field_traits<decltype(msg.default_state_interval)>;
@@ -2937,9 +2939,9 @@ namespace type_specification_detail {
 template <typename TypeSpecificationT>
 void to_json(nlohmann::json& j, const TypeSpecificationT& msg)
 {
-  using vda5050_json_utils::agv_class_traits;
-  using vda5050_json_utils::agv_kinematic_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::agv_class_traits;
+  using json_utils::agv_kinematic_traits;
+  using json_utils::optional_field_traits;
 
   using series_description_trait =
     optional_field_traits<decltype(msg.series_description)>;
@@ -2968,9 +2970,9 @@ void to_json(nlohmann::json& j, const TypeSpecificationT& msg)
 template <typename TypeSpecificationT>
 void from_json(const nlohmann::json& j, TypeSpecificationT& msg)
 {
-  using vda5050_json_utils::agv_class_traits;
-  using vda5050_json_utils::agv_kinematic_traits;
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::agv_class_traits;
+  using json_utils::agv_kinematic_traits;
+  using json_utils::optional_field_traits;
 
   using series_description_trait =
     optional_field_traits<decltype(msg.series_description)>;
@@ -3005,7 +3007,7 @@ namespace velocity_detail {
 template <typename VelocityT>
 void to_json(nlohmann::json& j, const VelocityT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using vx_trait = optional_field_traits<decltype(msg.vx)>;
   using vy_trait = optional_field_traits<decltype(msg.vy)>;
@@ -3031,7 +3033,7 @@ void to_json(nlohmann::json& j, const VelocityT& msg)
 template <typename VelocityT>
 void from_json(const nlohmann::json& j, VelocityT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using vx_trait = optional_field_traits<decltype(msg.vx)>;
   using vy_trait = optional_field_traits<decltype(msg.vy)>;
@@ -3061,7 +3063,7 @@ namespace visualization_detail {
 template <typename VisualizationT>
 void to_json(nlohmann::json& j, const VisualizationT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using agv_position_trait = optional_field_traits<decltype(msg.agv_position)>;
   using velocity_trait = optional_field_traits<decltype(msg.velocity)>;
@@ -3083,7 +3085,7 @@ void to_json(nlohmann::json& j, const VisualizationT& msg)
 template <typename VisualizationT>
 void from_json(const nlohmann::json& j, VisualizationT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
+  using json_utils::optional_field_traits;
 
   using agv_position_trait = optional_field_traits<decltype(msg.agv_position)>;
   using velocity_trait = optional_field_traits<decltype(msg.velocity)>;
@@ -3109,8 +3111,8 @@ namespace wheel_definition_detail {
 template <typename WheelDefinitionT>
 void to_json(nlohmann::json& j, const WheelDefinitionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::wheel_definition_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::wheel_definition_type_traits;
 
   using constraints_trait = optional_field_traits<decltype(msg.constraints)>;
 
@@ -3133,8 +3135,8 @@ void to_json(nlohmann::json& j, const WheelDefinitionT& msg)
 template <typename WheelDefinitionT>
 void from_json(const nlohmann::json& j, WheelDefinitionT& msg)
 {
-  using vda5050_json_utils::optional_field_traits;
-  using vda5050_json_utils::wheel_definition_type_traits;
+  using json_utils::optional_field_traits;
+  using json_utils::wheel_definition_type_traits;
 
   using constraints_trait = optional_field_traits<decltype(msg.constraints)>;
 
@@ -3156,518 +3158,522 @@ void from_json(const nlohmann::json& j, WheelDefinitionT& msg)
 
 }  // namespace wheel_definition_detail
 
-}  // namespace vda5050_types
+}  // namespace types
+}  // namespace vda5050_core
 
 //=============================================================================
-namespace vda5050_types {
+namespace vda5050_core {
+
+namespace types {
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Action& msg)
 {
-  vda5050_types::action_detail::to_json(j, msg);
+  vda5050_core::types::action_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Action& msg)
 {
-  vda5050_types::action_detail::from_json(j, msg);
+  vda5050_core::types::action_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionParameter& msg)
 {
-  vda5050_types::action_parameter_detail::to_json(j, msg);
+  vda5050_core::types::action_parameter_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionParameter& msg)
 {
-  vda5050_types::action_parameter_detail::from_json(j, msg);
+  vda5050_core::types::action_parameter_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionParameterFactsheet& msg)
 {
-  vda5050_types::action_parameter_factsheet_detail::to_json(j, msg);
+  vda5050_core::types::action_parameter_factsheet_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionParameterFactsheet& msg)
 {
-  vda5050_types::action_parameter_factsheet_detail::from_json(j, msg);
+  vda5050_core::types::action_parameter_factsheet_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionState& msg)
 {
-  vda5050_types::action_state_detail::to_json(j, msg);
+  vda5050_core::types::action_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionState& msg)
 {
-  vda5050_types::action_state_detail::from_json(j, msg);
+  vda5050_core::types::action_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVAction& msg)
 {
-  vda5050_types::agv_action_detail::to_json(j, msg);
+  vda5050_core::types::agv_action_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVAction& msg)
 {
-  vda5050_types::agv_action_detail::from_json(j, msg);
+  vda5050_core::types::agv_action_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVGeometry& msg)
 {
-  vda5050_types::agv_geometry_detail::to_json(j, msg);
+  vda5050_core::types::agv_geometry_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVGeometry& msg)
 {
-  vda5050_types::agv_geometry_detail::from_json(j, msg);
+  vda5050_core::types::agv_geometry_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVPosition& msg)
 {
-  vda5050_types::agv_position_detail::to_json(j, msg);
+  vda5050_core::types::agv_position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVPosition& msg)
 {
-  vda5050_types::agv_position_detail::from_json(j, msg);
+  vda5050_core::types::agv_position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const BatteryState& msg)
 {
-  vda5050_types::battery_state_detail::to_json(j, msg);
+  vda5050_core::types::battery_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, BatteryState& msg)
 {
-  vda5050_types::battery_state_detail::from_json(j, msg);
+  vda5050_core::types::battery_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const BoundingBoxReference& msg)
 {
-  vda5050_types::bounding_box_reference_detail::to_json(j, msg);
+  vda5050_core::types::bounding_box_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, BoundingBoxReference& msg)
 {
-  vda5050_types::bounding_box_reference_detail::from_json(j, msg);
+  vda5050_core::types::bounding_box_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Connection& msg)
 {
-  vda5050_types::connection_detail::to_json(j, msg);
+  vda5050_core::types::connection_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Connection& msg)
 {
-  vda5050_types::connection_detail::from_json(j, msg);
+  vda5050_core::types::connection_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ControlPoint& msg)
 {
-  vda5050_types::control_point_detail::to_json(j, msg);
+  vda5050_core::types::control_point_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ControlPoint& msg)
 {
-  vda5050_types::control_point_detail::from_json(j, msg);
+  vda5050_core::types::control_point_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Edge& msg)
 {
-  vda5050_types::edge_detail::to_json(j, msg);
+  vda5050_core::types::edge_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Edge& msg)
 {
-  vda5050_types::edge_detail::from_json(j, msg);
+  vda5050_core::types::edge_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const EdgeState& msg)
 {
-  vda5050_types::edge_state_detail::to_json(j, msg);
+  vda5050_core::types::edge_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, EdgeState& msg)
 {
-  vda5050_types::edge_state_detail::from_json(j, msg);
+  vda5050_core::types::edge_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Envelope2d& msg)
 {
-  vda5050_types::envelope2d_detail::to_json(j, msg);
+  vda5050_core::types::envelope2d_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Envelope2d& msg)
 {
-  vda5050_types::envelope2d_detail::from_json(j, msg);
+  vda5050_core::types::envelope2d_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Envelope3d& msg)
 {
-  vda5050_types::envelope3d_detail::to_json(j, msg);
+  vda5050_core::types::envelope3d_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Envelope3d& msg)
 {
-  vda5050_types::envelope3d_detail::from_json(j, msg);
+  vda5050_core::types::envelope3d_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Error& msg)
 {
-  vda5050_types::error_detail::to_json(j, msg);
+  vda5050_core::types::error_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Error& msg)
 {
-  vda5050_types::error_detail::from_json(j, msg);
+  vda5050_core::types::error_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ErrorReference& msg)
 {
-  vda5050_types::error_reference_detail::to_json(j, msg);
+  vda5050_core::types::error_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ErrorReference& msg)
 {
-  vda5050_types::error_reference_detail::from_json(j, msg);
+  vda5050_core::types::error_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Factsheet& msg)
 {
-  vda5050_types::factsheet_detail::to_json(j, msg);
+  vda5050_core::types::factsheet_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Factsheet& msg)
 {
-  vda5050_types::factsheet_detail::from_json(j, msg);
+  vda5050_core::types::factsheet_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Header& msg)
 {
-  vda5050_types::header_detail::to_json(j, msg);
+  vda5050_core::types::header_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Header& msg)
 {
-  vda5050_types::header_detail::from_json(j, msg);
+  vda5050_core::types::header_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Info& msg)
 {
-  vda5050_types::info_detail::to_json(j, msg);
+  vda5050_core::types::info_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Info& msg)
 {
-  vda5050_types::info_detail::from_json(j, msg);
+  vda5050_core::types::info_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const InfoReference& msg)
 {
-  vda5050_types::info_reference_detail::to_json(j, msg);
+  vda5050_core::types::info_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, InfoReference& msg)
 {
-  vda5050_types::info_reference_detail::from_json(j, msg);
+  vda5050_core::types::info_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const InstantActions& msg)
 {
-  vda5050_types::instant_actions_detail::to_json(j, msg);
+  vda5050_core::types::instant_actions_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, InstantActions& msg)
 {
-  vda5050_types::instant_actions_detail::from_json(j, msg);
+  vda5050_core::types::instant_actions_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Load& msg)
 {
-  vda5050_types::load_detail::to_json(j, msg);
+  vda5050_core::types::load_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Load& msg)
 {
-  vda5050_types::load_detail::from_json(j, msg);
+  vda5050_core::types::load_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadDimensions& msg)
 {
-  vda5050_types::load_dimensions_detail::to_json(j, msg);
+  vda5050_core::types::load_dimensions_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadDimensions& msg)
 {
-  vda5050_types::load_dimensions_detail::from_json(j, msg);
+  vda5050_core::types::load_dimensions_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadSet& msg)
 {
-  vda5050_types::load_set_detail::to_json(j, msg);
+  vda5050_core::types::load_set_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadSet& msg)
 {
-  vda5050_types::load_set_detail::from_json(j, msg);
+  vda5050_core::types::load_set_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadSpecification& msg)
 {
-  vda5050_types::load_specification_detail::to_json(j, msg);
+  vda5050_core::types::load_specification_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadSpecification& msg)
 {
-  vda5050_types::load_specification_detail::from_json(j, msg);
+  vda5050_core::types::load_specification_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const MaxArrayLens& msg)
 {
-  vda5050_types::max_array_lens_detail::to_json(j, msg);
+  vda5050_core::types::max_array_lens_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, MaxArrayLens& msg)
 {
-  vda5050_types::max_array_lens_detail::from_json(j, msg);
+  vda5050_core::types::max_array_lens_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const MaxStringLens& msg)
 {
-  vda5050_types::max_string_lens_detail::to_json(j, msg);
+  vda5050_core::types::max_string_lens_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, MaxStringLens& msg)
 {
-  vda5050_types::max_string_lens_detail::from_json(j, msg);
+  vda5050_core::types::max_string_lens_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Node& msg)
 {
-  vda5050_types::node_detail::to_json(j, msg);
+  vda5050_core::types::node_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Node& msg)
 {
-  vda5050_types::node_detail::from_json(j, msg);
+  vda5050_core::types::node_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const NodePosition& msg)
 {
-  vda5050_types::node_position_detail::to_json(j, msg);
+  vda5050_core::types::node_position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, NodePosition& msg)
 {
-  vda5050_types::node_position_detail::from_json(j, msg);
+  vda5050_core::types::node_position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const NodeState& msg)
 {
-  vda5050_types::node_state_detail::to_json(j, msg);
+  vda5050_core::types::node_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, NodeState& msg)
 {
-  vda5050_types::node_state_detail::from_json(j, msg);
+  vda5050_core::types::node_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const OptionalParameter& msg)
 {
-  vda5050_types::optional_parameter_detail::to_json(j, msg);
+  vda5050_core::types::optional_parameter_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, OptionalParameter& msg)
 {
-  vda5050_types::optional_parameter_detail::from_json(j, msg);
+  vda5050_core::types::optional_parameter_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Order& msg)
 {
-  vda5050_types::order_detail::to_json(j, msg);
+  vda5050_core::types::order_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Order& msg)
 {
-  vda5050_types::order_detail::from_json(j, msg);
+  vda5050_core::types::order_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const PhysicalParameters& msg)
 {
-  vda5050_types::physical_parameters_detail::to_json(j, msg);
+  vda5050_core::types::physical_parameters_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, PhysicalParameters& msg)
 {
-  vda5050_types::physical_parameters_detail::from_json(j, msg);
+  vda5050_core::types::physical_parameters_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const PolygonPoint& msg)
 {
-  vda5050_types::polygon_point_detail::to_json(j, msg);
+  vda5050_core::types::polygon_point_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, PolygonPoint& msg)
 {
-  vda5050_types::polygon_point_detail::from_json(j, msg);
+  vda5050_core::types::polygon_point_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Position& msg)
 {
-  vda5050_types::position_detail::to_json(j, msg);
+  vda5050_core::types::position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Position& msg)
 {
-  vda5050_types::position_detail::from_json(j, msg);
+  vda5050_core::types::position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ProtocolFeatures& msg)
 {
-  vda5050_types::protocol_features_detail::to_json(j, msg);
+  vda5050_core::types::protocol_features_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ProtocolFeatures& msg)
 {
-  vda5050_types::protocol_features_detail::from_json(j, msg);
+  vda5050_core::types::protocol_features_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ProtocolLimits& msg)
 {
-  vda5050_types::protocol_limits_detail::to_json(j, msg);
+  vda5050_core::types::protocol_limits_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ProtocolLimits& msg)
 {
-  vda5050_types::protocol_limits_detail::from_json(j, msg);
+  vda5050_core::types::protocol_limits_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const SafetyState& msg)
 {
-  vda5050_types::safety_state_detail::to_json(j, msg);
+  vda5050_core::types::safety_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, SafetyState& msg)
 {
-  vda5050_types::safety_state_detail::from_json(j, msg);
+  vda5050_core::types::safety_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const State& msg)
 {
-  vda5050_types::state_detail::to_json(j, msg);
+  vda5050_core::types::state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, State& msg)
 {
-  vda5050_types::state_detail::from_json(j, msg);
+  vda5050_core::types::state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Timing& msg)
 {
-  vda5050_types::timing_detail::to_json(j, msg);
+  vda5050_core::types::timing_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Timing& msg)
 {
-  vda5050_types::timing_detail::from_json(j, msg);
+  vda5050_core::types::timing_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Trajectory& msg)
 {
-  vda5050_types::trajectory_detail::to_json(j, msg);
+  vda5050_core::types::trajectory_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Trajectory& msg)
 {
-  vda5050_types::trajectory_detail::from_json(j, msg);
+  vda5050_core::types::trajectory_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const TypeSpecification& msg)
 {
-  vda5050_types::type_specification_detail::to_json(j, msg);
+  vda5050_core::types::type_specification_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, TypeSpecification& msg)
 {
-  vda5050_types::type_specification_detail::from_json(j, msg);
+  vda5050_core::types::type_specification_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Velocity& msg)
 {
-  vda5050_types::velocity_detail::to_json(j, msg);
+  vda5050_core::types::velocity_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Velocity& msg)
 {
-  vda5050_types::velocity_detail::from_json(j, msg);
+  vda5050_core::types::velocity_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Visualization& msg)
 {
-  vda5050_types::visualization_detail::to_json(j, msg);
+  vda5050_core::types::visualization_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Visualization& msg)
 {
-  vda5050_types::visualization_detail::from_json(j, msg);
+  vda5050_core::types::visualization_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const WheelDefinition& msg)
 {
-  vda5050_types::wheel_definition_detail::to_json(j, msg);
+  vda5050_core::types::wheel_definition_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, WheelDefinition& msg)
 {
-  vda5050_types::wheel_definition_detail::from_json(j, msg);
+  vda5050_core::types::wheel_definition_detail::from_json(j, msg);
 }
 
-}  // namespace vda5050_types
+}  // namespace types
+}  // namespace vda5050_core
 
 //=============================================================================
 #ifdef ENABLE_ROS2
@@ -3678,507 +3684,507 @@ namespace msg {
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Action& msg)
 {
-  vda5050_types::action_detail::to_json(j, msg);
+  vda5050_core::types::action_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Action& msg)
 {
-  vda5050_types::action_detail::from_json(j, msg);
+  vda5050_core::types::action_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionParameter& msg)
 {
-  vda5050_types::action_parameter_detail::to_json(j, msg);
+  vda5050_core::types::action_parameter_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionParameter& msg)
 {
-  vda5050_types::action_parameter_detail::from_json(j, msg);
+  vda5050_core::types::action_parameter_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionParameterFactsheet& msg)
 {
-  vda5050_types::action_parameter_factsheet_detail::to_json(j, msg);
+  vda5050_core::types::action_parameter_factsheet_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionParameterFactsheet& msg)
 {
-  vda5050_types::action_parameter_factsheet_detail::from_json(j, msg);
+  vda5050_core::types::action_parameter_factsheet_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ActionState& msg)
 {
-  vda5050_types::action_state_detail::to_json(j, msg);
+  vda5050_core::types::action_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ActionState& msg)
 {
-  vda5050_types::action_state_detail::from_json(j, msg);
+  vda5050_core::types::action_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVAction& msg)
 {
-  vda5050_types::agv_action_detail::to_json(j, msg);
+  vda5050_core::types::agv_action_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVAction& msg)
 {
-  vda5050_types::agv_action_detail::from_json(j, msg);
+  vda5050_core::types::agv_action_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVGeometry& msg)
 {
-  vda5050_types::agv_geometry_detail::to_json(j, msg);
+  vda5050_core::types::agv_geometry_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVGeometry& msg)
 {
-  vda5050_types::agv_geometry_detail::from_json(j, msg);
+  vda5050_core::types::agv_geometry_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const AGVPosition& msg)
 {
-  vda5050_types::agv_position_detail::to_json(j, msg);
+  vda5050_core::types::agv_position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, AGVPosition& msg)
 {
-  vda5050_types::agv_position_detail::from_json(j, msg);
+  vda5050_core::types::agv_position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const BatteryState& msg)
 {
-  vda5050_types::battery_state_detail::to_json(j, msg);
+  vda5050_core::types::battery_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, BatteryState& msg)
 {
-  vda5050_types::battery_state_detail::from_json(j, msg);
+  vda5050_core::types::battery_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const BoundingBoxReference& msg)
 {
-  vda5050_types::bounding_box_reference_detail::to_json(j, msg);
+  vda5050_core::types::bounding_box_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, BoundingBoxReference& msg)
 {
-  vda5050_types::bounding_box_reference_detail::from_json(j, msg);
+  vda5050_core::types::bounding_box_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Connection& msg)
 {
-  vda5050_types::connection_detail::to_json(j, msg);
+  vda5050_core::types::connection_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Connection& msg)
 {
-  vda5050_types::connection_detail::from_json(j, msg);
+  vda5050_core::types::connection_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ControlPoint& msg)
 {
-  vda5050_types::control_point_detail::to_json(j, msg);
+  vda5050_core::types::control_point_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ControlPoint& msg)
 {
-  vda5050_types::control_point_detail::from_json(j, msg);
+  vda5050_core::types::control_point_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Edge& msg)
 {
-  vda5050_types::edge_detail::to_json(j, msg);
+  vda5050_core::types::edge_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Edge& msg)
 {
-  vda5050_types::edge_detail::from_json(j, msg);
+  vda5050_core::types::edge_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const EdgeState& msg)
 {
-  vda5050_types::edge_state_detail::to_json(j, msg);
+  vda5050_core::types::edge_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, EdgeState& msg)
 {
-  vda5050_types::edge_state_detail::from_json(j, msg);
+  vda5050_core::types::edge_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Envelope2d& msg)
 {
-  vda5050_types::envelope2d_detail::to_json(j, msg);
+  vda5050_core::types::envelope2d_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Envelope2d& msg)
 {
-  vda5050_types::envelope2d_detail::from_json(j, msg);
+  vda5050_core::types::envelope2d_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Envelope3d& msg)
 {
-  vda5050_types::envelope3d_detail::to_json(j, msg);
+  vda5050_core::types::envelope3d_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Envelope3d& msg)
 {
-  vda5050_types::envelope3d_detail::from_json(j, msg);
+  vda5050_core::types::envelope3d_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Error& msg)
 {
-  vda5050_types::error_detail::to_json(j, msg);
+  vda5050_core::types::error_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Error& msg)
 {
-  vda5050_types::error_detail::from_json(j, msg);
+  vda5050_core::types::error_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ErrorReference& msg)
 {
-  vda5050_types::error_reference_detail::to_json(j, msg);
+  vda5050_core::types::error_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ErrorReference& msg)
 {
-  vda5050_types::error_reference_detail::from_json(j, msg);
+  vda5050_core::types::error_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Factsheet& msg)
 {
-  vda5050_types::factsheet_detail::to_json(j, msg);
+  vda5050_core::types::factsheet_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Factsheet& msg)
 {
-  vda5050_types::factsheet_detail::from_json(j, msg);
+  vda5050_core::types::factsheet_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Header& msg)
 {
-  vda5050_types::header_detail::to_json(j, msg);
+  vda5050_core::types::header_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Header& msg)
 {
-  vda5050_types::header_detail::from_json(j, msg);
+  vda5050_core::types::header_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Info& msg)
 {
-  vda5050_types::info_detail::to_json(j, msg);
+  vda5050_core::types::info_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Info& msg)
 {
-  vda5050_types::info_detail::from_json(j, msg);
+  vda5050_core::types::info_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const InfoReference& msg)
 {
-  vda5050_types::info_reference_detail::to_json(j, msg);
+  vda5050_core::types::info_reference_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, InfoReference& msg)
 {
-  vda5050_types::info_reference_detail::from_json(j, msg);
+  vda5050_core::types::info_reference_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const InstantActions& msg)
 {
-  vda5050_types::instant_actions_detail::to_json(j, msg);
+  vda5050_core::types::instant_actions_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, InstantActions& msg)
 {
-  vda5050_types::instant_actions_detail::from_json(j, msg);
+  vda5050_core::types::instant_actions_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Load& msg)
 {
-  vda5050_types::load_detail::to_json(j, msg);
+  vda5050_core::types::load_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Load& msg)
 {
-  vda5050_types::load_detail::from_json(j, msg);
+  vda5050_core::types::load_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadDimensions& msg)
 {
-  vda5050_types::load_dimensions_detail::to_json(j, msg);
+  vda5050_core::types::load_dimensions_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadDimensions& msg)
 {
-  vda5050_types::load_dimensions_detail::from_json(j, msg);
+  vda5050_core::types::load_dimensions_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadSet& msg)
 {
-  vda5050_types::load_set_detail::to_json(j, msg);
+  vda5050_core::types::load_set_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadSet& msg)
 {
-  vda5050_types::load_set_detail::from_json(j, msg);
+  vda5050_core::types::load_set_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const LoadSpecification& msg)
 {
-  vda5050_types::load_specification_detail::to_json(j, msg);
+  vda5050_core::types::load_specification_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, LoadSpecification& msg)
 {
-  vda5050_types::load_specification_detail::from_json(j, msg);
+  vda5050_core::types::load_specification_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const MaxArrayLens& msg)
 {
-  vda5050_types::max_array_lens_detail::to_json(j, msg);
+  vda5050_core::types::max_array_lens_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, MaxArrayLens& msg)
 {
-  vda5050_types::max_array_lens_detail::from_json(j, msg);
+  vda5050_core::types::max_array_lens_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const MaxStringLens& msg)
 {
-  vda5050_types::max_string_lens_detail::to_json(j, msg);
+  vda5050_core::types::max_string_lens_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, MaxStringLens& msg)
 {
-  vda5050_types::max_string_lens_detail::from_json(j, msg);
+  vda5050_core::types::max_string_lens_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Node& msg)
 {
-  vda5050_types::node_detail::to_json(j, msg);
+  vda5050_core::types::node_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Node& msg)
 {
-  vda5050_types::node_detail::from_json(j, msg);
+  vda5050_core::types::node_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const NodePosition& msg)
 {
-  vda5050_types::node_position_detail::to_json(j, msg);
+  vda5050_core::types::node_position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, NodePosition& msg)
 {
-  vda5050_types::node_position_detail::from_json(j, msg);
+  vda5050_core::types::node_position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const NodeState& msg)
 {
-  vda5050_types::node_state_detail::to_json(j, msg);
+  vda5050_core::types::node_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, NodeState& msg)
 {
-  vda5050_types::node_state_detail::from_json(j, msg);
+  vda5050_core::types::node_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const OptionalParameter& msg)
 {
-  vda5050_types::optional_parameter_detail::to_json(j, msg);
+  vda5050_core::types::optional_parameter_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, OptionalParameter& msg)
 {
-  vda5050_types::optional_parameter_detail::from_json(j, msg);
+  vda5050_core::types::optional_parameter_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Order& msg)
 {
-  vda5050_types::order_detail::to_json(j, msg);
+  vda5050_core::types::order_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Order& msg)
 {
-  vda5050_types::order_detail::from_json(j, msg);
+  vda5050_core::types::order_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const PhysicalParameters& msg)
 {
-  vda5050_types::physical_parameters_detail::to_json(j, msg);
+  vda5050_core::types::physical_parameters_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, PhysicalParameters& msg)
 {
-  vda5050_types::physical_parameters_detail::from_json(j, msg);
+  vda5050_core::types::physical_parameters_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const PolygonPoint& msg)
 {
-  vda5050_types::polygon_point_detail::to_json(j, msg);
+  vda5050_core::types::polygon_point_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, PolygonPoint& msg)
 {
-  vda5050_types::polygon_point_detail::from_json(j, msg);
+  vda5050_core::types::polygon_point_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Position& msg)
 {
-  vda5050_types::position_detail::to_json(j, msg);
+  vda5050_core::types::position_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Position& msg)
 {
-  vda5050_types::position_detail::from_json(j, msg);
+  vda5050_core::types::position_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ProtocolFeatures& msg)
 {
-  vda5050_types::protocol_features_detail::to_json(j, msg);
+  vda5050_core::types::protocol_features_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ProtocolFeatures& msg)
 {
-  vda5050_types::protocol_features_detail::from_json(j, msg);
+  vda5050_core::types::protocol_features_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const ProtocolLimits& msg)
 {
-  vda5050_types::protocol_limits_detail::to_json(j, msg);
+  vda5050_core::types::protocol_limits_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, ProtocolLimits& msg)
 {
-  vda5050_types::protocol_limits_detail::from_json(j, msg);
+  vda5050_core::types::protocol_limits_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const SafetyState& msg)
 {
-  vda5050_types::safety_state_detail::to_json(j, msg);
+  vda5050_core::types::safety_state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, SafetyState& msg)
 {
-  vda5050_types::safety_state_detail::from_json(j, msg);
+  vda5050_core::types::safety_state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const State& msg)
 {
-  vda5050_types::state_detail::to_json(j, msg);
+  vda5050_core::types::state_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, State& msg)
 {
-  vda5050_types::state_detail::from_json(j, msg);
+  vda5050_core::types::state_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Timing& msg)
 {
-  vda5050_types::timing_detail::to_json(j, msg);
+  vda5050_core::types::timing_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Timing& msg)
 {
-  vda5050_types::timing_detail::from_json(j, msg);
+  vda5050_core::types::timing_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Trajectory& msg)
 {
-  vda5050_types::trajectory_detail::to_json(j, msg);
+  vda5050_core::types::trajectory_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Trajectory& msg)
 {
-  vda5050_types::trajectory_detail::from_json(j, msg);
+  vda5050_core::types::trajectory_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const TypeSpecification& msg)
 {
-  vda5050_types::type_specification_detail::to_json(j, msg);
+  vda5050_core::types::type_specification_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, TypeSpecification& msg)
 {
-  vda5050_types::type_specification_detail::from_json(j, msg);
+  vda5050_core::types::type_specification_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Velocity& msg)
 {
-  vda5050_types::velocity_detail::to_json(j, msg);
+  vda5050_core::types::velocity_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Velocity& msg)
 {
-  vda5050_types::velocity_detail::from_json(j, msg);
+  vda5050_core::types::velocity_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const Visualization& msg)
 {
-  vda5050_types::visualization_detail::to_json(j, msg);
+  vda5050_core::types::visualization_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, Visualization& msg)
 {
-  vda5050_types::visualization_detail::from_json(j, msg);
+  vda5050_core::types::visualization_detail::from_json(j, msg);
 }
 
 //=============================================================================
 inline void to_json(nlohmann::json& j, const WheelDefinition& msg)
 {
-  vda5050_types::wheel_definition_detail::to_json(j, msg);
+  vda5050_core::types::wheel_definition_detail::to_json(j, msg);
 }
 
 inline void from_json(const nlohmann::json& j, WheelDefinition& msg)
 {
-  vda5050_types::wheel_definition_detail::from_json(j, msg);
+  vda5050_core::types::wheel_definition_detail::from_json(j, msg);
 }
 
 }  // namespace msg
@@ -4186,4 +4192,4 @@ inline void from_json(const nlohmann::json& j, WheelDefinition& msg)
 }  // namespace vda5050_interfaces
 #endif  // ENABLE_ROS2
 
-#endif  // VDA5050_JSON_UTILS__SERIALIZATION_HPP_
+#endif  // VDA5050_CORE__JSON_UTILS__SERIALIZATION_HPP_

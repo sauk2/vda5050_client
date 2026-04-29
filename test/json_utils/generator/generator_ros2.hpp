@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef GENERATOR__GENERATOR_ROS2_HPP_
-#define GENERATOR__GENERATOR_ROS2_HPP_
+#ifndef JSON_UTILS__GENERATOR__GENERATOR_ROS2_HPP_
+#define JSON_UTILS__GENERATOR__GENERATOR_ROS2_HPP_
 
 #include <limits>
 #include <random>
@@ -901,4 +901,4 @@ private:
   std::uniform_real_distribution<double> percentage_dist_;
 };
 
-#endif  // GENERATOR__GENERATOR_ROS2_HPP_
+#endif  // JSON_UTILS__GENERATOR__GENERATOR_ROS2_HPP_

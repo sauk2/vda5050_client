@@ -68,7 +68,7 @@
 #include <vda5050_interfaces/msg/visualization.hpp>
 #include <vda5050_interfaces/msg/wheel_definition.hpp>
 
-#include "vda5050_json_utils/serialization.hpp"
+#include "vda5050_core/json_utils/serialization.hpp"
 
 #include "generator/generator_ros2.hpp"
 
