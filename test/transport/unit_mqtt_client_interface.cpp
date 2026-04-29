@@ -18,9 +18,9 @@
 
 #include <gmock/gmock.h>
 
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
 
-class MockMqttClient : public vda5050_core::mqtt_client::MqttClientInterface
+class MockMqttClient : public vda5050_core::transport::MqttClientInterface
 {
 public:
   MOCK_METHOD(void, connect, (), (override));

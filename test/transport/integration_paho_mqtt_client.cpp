@@ -22,8 +22,8 @@
 #include <chrono>
 #include <thread>
 
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
-#include "vda5050_core/mqtt_client/paho_mqtt_client.hpp"
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
+#include "vda5050_core/transport/paho_mqtt_client.hpp"
 
 TEST(PahoMqttClientTest, PublishSubscribe)
 {
@@ -35,7 +35,7 @@ TEST(PahoMqttClientTest, PublishSubscribe)
   std::atomic_int message_count{0};
 
   auto listener =
-    vda5050_core::mqtt_client::PahoMqttClient::make(broker, "listener");
+    vda5050_core::transport::PahoMqttClient::make(broker, "listener");
   ASSERT_NO_THROW(listener->connect());
   ASSERT_TRUE(listener->connected());
   ASSERT_NO_THROW(listener->subscribe(
@@ -48,11 +48,11 @@ TEST(PahoMqttClientTest, PublishSubscribe)
     qos));
 
   auto talker =
-    vda5050_core::mqtt_client::create_default_client(broker, "talker");
+    vda5050_core::transport::create_default_client(broker, "talker");
   ASSERT_NO_THROW(talker->connect());
   ASSERT_NO_THROW(talker->publish(topic, payload, qos));
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   ASSERT_EQ(message_count, 1);
 
@@ -70,7 +70,7 @@ TEST(PahoMqttClientTest, UnsubscribeStopsMessages)
   std::atomic_int message_count{0};
 
   auto listener =
-    vda5050_core::mqtt_client::PahoMqttClient::make(broker, "unsub_listener");
+    vda5050_core::transport::PahoMqttClient::make(broker, "unsub_listener");
   ASSERT_NO_THROW(listener->connect());
   ASSERT_NO_THROW(listener->subscribe(
     topic,
@@ -80,21 +80,21 @@ TEST(PahoMqttClientTest, UnsubscribeStopsMessages)
     qos));
 
   auto talker =
-    vda5050_core::mqtt_client::create_default_client(broker, "unsub_talker");
+    vda5050_core::transport::create_default_client(broker, "unsub_talker");
   ASSERT_NO_THROW(talker->connect());
 
   // Publish first message and verify it is received
   ASSERT_NO_THROW(talker->publish(topic, payload, qos));
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   ASSERT_EQ(message_count.load(), 1);
 
   // Unsubscribe from the topic
   ASSERT_NO_THROW(listener->unsubscribe(topic));
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
   // Publish second message after unsubscribe
   ASSERT_NO_THROW(talker->publish(topic, payload, qos));
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
   // Message count should still be 1 (no new messages received)
   ASSERT_EQ(message_count.load(), 1);
@@ -111,7 +111,7 @@ TEST(PahoMqttClient, LastWill)
   int qos = 0;
 
   auto client =
-    vda5050_core::mqtt_client::PahoMqttClient::make(broker, "last_will_client");
+    vda5050_core::transport::PahoMqttClient::make(broker, "last_will_client");
   ASSERT_NO_THROW(client->set_will(topic, payload, qos));
   ASSERT_NO_THROW(client->connect());
   ASSERT_TRUE(client->connected());
@@ -127,7 +127,7 @@ TEST(PahoMqttClientTest, FailedConnectionRemainsDisconnected)
   // Use an invalid broker endpoint to simulate connection failure
   std::string invalid_broker = "tcp://invalid.broker.address:1883";
 
-  auto client = vda5050_core::mqtt_client::PahoMqttClient::make(
+  auto client = vda5050_core::transport::PahoMqttClient::make(
     invalid_broker, "test_failed_connection");
 
   // Initial state should be disconnected

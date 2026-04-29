@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-#include "vda5050_core/mqtt_client/paho_mqtt_client.hpp"
+#include "vda5050_core/transport/paho_mqtt_client.hpp"
 #include "vda5050_core/logger/logger.hpp"
 
 namespace vda5050_core {
 
-namespace mqtt_client {
+namespace transport {
 
 //=============================================================================
 std::shared_ptr<MqttClientInterface> create_default_client(
@@ -97,10 +97,7 @@ std::shared_ptr<PahoMqttClient> PahoMqttClient::make(
 }
 
 //=============================================================================
-PahoMqttClient::~PahoMqttClient()
-{
-  disconnect();
-}
+PahoMqttClient::~PahoMqttClient() = default;
 
 //=============================================================================
 void PahoMqttClient::connect()
@@ -229,5 +226,5 @@ PahoMqttClient::PahoMqttClient(
   conn_options_.set_automatic_reconnect(2, 32);
 }
 
-}  // namespace mqtt_client
+}  // namespace transport
 }  // namespace vda5050_core
