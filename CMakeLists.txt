@@ -66,6 +66,22 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+add_library(errors INTERFACE)
+add_library(${PROJECT_NAME}::errors ALIAS errors)
+target_include_directories(errors
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+add_library(order_utils SHARED src/order_utils/order_graph_validator.cpp)
+add_library(${PROJECT_NAME}::order_utils ALIAS order_utils)
+target_link_libraries(order_utils PUBLIC types errors)
+target_include_directories(order_utils
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
 add_library(transport src/transport/paho_mqtt_client.cpp)
 add_library(${PROJECT_NAME}::transport ALIAS transport)
@@ -80,7 +96,14 @@ target_include_directories(transport
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-set(lib_targets types json_utils logger transport)
+set(lib_targets
+  types
+  json_utils
+  logger
+  errors
+  order_utils
+  transport
+)
 
 install(
   DIRECTORY include/${PROJECT_NAME}
@@ -153,9 +176,13 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
     include(GoogleTest)
 
-    set(json_tests test/json_utils/test_json_utils.cpp)
+    add_executable(test_order_utils test/order_utils/unit_order_graph_validator.cpp)
+    target_link_libraries(test_order_utils
+      GTest::gtest_main
+      ${PROJECT_NAME}::order_utils
+    )
 
-    add_executable(test_json_utils ${json_tests})
+    add_executable(test_json_utils test/json_utils/test_json_utils.cpp)
     target_link_libraries(test_json_utils
       GTest::gtest_main
       ${PROJECT_NAME}::json_utils
@@ -180,6 +207,7 @@ if(BUILD_TESTING)
     )
 
     set(test_execs
+      test_order_utils
       test_json_utils
       test_transport
       test_logger
