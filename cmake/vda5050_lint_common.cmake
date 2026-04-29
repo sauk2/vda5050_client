@@ -19,42 +19,41 @@
 #
 
 function(vda5050_lint_common)
-  find_package(ament_cmake_cppcheck REQUIRED)
-  ament_cppcheck()
-
-  find_package(ament_cmake_cpplint REQUIRED)
-  set(cpplint_filters
-    "-whitespace/newline"
-  )
-  ament_cpplint(
-    FILTERS "${cpplint_filters}"
-  )
-
-  # Only run ament_clang_format for 16.0.0 and higher
-  find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
-  if(CLANG_FORMAT_EXECUTABLE)
-    execute_process(
-        COMMAND ${CLANG_FORMAT_EXECUTABLE} --version
-        OUTPUT_VARIABLE CLANG_FORMAT_VERSION_OUTPUT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
+  find_program(cppcheck_exe cppcheck)
+  if(cppcheck_exe)
+    add_test(
+      NAME cppcheck
+      COMMAND ${cppcheck_exe}
+                --enable=all
+                --error-exitcode=1
+                --verbose
+                --std=c++17
+                -I ${CMAKE_CURRENT_SOURCE_DIR}/include
+                --suppress=missingIncludeSystem
+                --suppress=unusedFunction
+                --suppress=useStlAlgorithm
+                ${CMAKE_CURRENT_SOURCE_DIR}/src
+                ${CMAKE_CURRENT_SOURCE_DIR}/include
+                ${CMAKE_CURRENT_SOURCE_DIR}/test
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-
-    # Parse the version number from the output
-    # The output typically looks something like: "<platform> clang-format version 17.0.6-<platform-version>"
-    string(REGEX REPLACE ".*version \([0-9.]\+\).*" "\\1" CLANG_FORMAT_VERSION "${CLANG_FORMAT_VERSION_OUTPUT}")
-
-    message(STATUS "clang-format version: ${CLANG_FORMAT_VERSION}")
-    if(CLANG_FORMAT_VERSION VERSION_GREATER_EQUAL "16.0.0")
-      find_package(ament_cmake_clang_format REQUIRED)
-      ament_clang_format(
-        CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../.clang-format"
-      )
-    endif()
   endif()
 
-  # Disable copyright check for older ament_copyright versions
-  find_package(ament_cmake_copyright 0.13.3 QUIET)
-  if(ament_cmake_copyright_FOUND)
-    ament_copyright()
+  find_program(clang_format_exe clang-format)
+  if(clang_format_exe)
+    file(GLOB_RECURSE srcs
+      ${CMAKE_SOURCE_DIR}/src/*.cpp
+      ${CMAKE_SOURCE_DIR}/include/*.hpp
+      ${CMAKE_SOURCE_DIR}/test.*.cpp
+    )
+
+    add_test(
+      NAME clang_format
+      COMMAND ${clang_format_exe}
+              --dry-run
+              --Werror
+              ${srcs}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
   endif()
 endfunction()
