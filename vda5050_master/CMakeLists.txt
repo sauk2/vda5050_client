@@ -14,6 +14,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(vda5050_core REQUIRED)
+find_package(vda5050_execution REQUIRED)
 find_package(vda5050_types REQUIRED)
 find_package(vda5050_json_utils REQUIRED)
 find_package(fmt REQUIRED)
@@ -26,6 +27,7 @@ add_library(vda5050_master
 
 ament_target_dependencies(vda5050_master
   vda5050_core
+  vda5050_execution
   vda5050_types
   vda5050_json_utils
   fmt
@@ -74,6 +76,12 @@ if(BUILD_TESTING)
     test/master/master_mqtt_test.cpp
   )
   target_link_libraries(test_master vda5050_master)
+
+  # Master teardown integration test (uses gmock MqttClient, no broker)
+  ament_add_gmock(test_master_teardown
+    test/master/teardown_test.cpp
+  )
+  target_link_libraries(test_master_teardown vda5050_master)
 
 endif()
 

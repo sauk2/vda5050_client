@@ -22,9 +22,10 @@
 
 #include "nlohmann/json.hpp"
 #include "vda5050_core/logger/logger.hpp"
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
+#include "vda5050_execution/protocol_adapter.hpp"
 #include "vda5050_json_utils/serialization.hpp"
 #include "vda5050_master/standard_names.hpp"
+#include "vda5050_master/vda5050_master/master.hpp"
 
 namespace vda5050_master {
 
@@ -33,37 +34,71 @@ namespace vda5050_master {
 // ============================================================================
 
 AGV::AGV(
+  std::shared_ptr<vda5050_execution::ProtocolAdapter> protocol_adapter,
   const std::string& manufacturer, const std::string& serial_number,
-  const std::string& broker_address, size_t max_queue_size, bool drop_oldest,
-  int state_heartbeat_interval)
+  size_t max_queue_size, bool drop_oldest, int state_heartbeat_interval,
+  std::weak_ptr<VDA5050Master> parent)
 : manufacturer_(manufacturer),
   serial_number_(serial_number),
   agv_id_(manufacturer + "/" + serial_number),
-  broker_address_(broker_address),
+  protocol_adapter_(protocol_adapter),
+  parent_(std::move(parent)),
   state_heartbeat_interval_(state_heartbeat_interval),
   created_time_(Clock::now()),
   max_queue_size_(max_queue_size),
   drop_oldest_(drop_oldest)
 {
-  if (!broker_address_.empty())
-  {
-    mqtt_client_ = vda5050_core::mqtt_client::create_default_client(
-      broker_address_, agv_id_);
-  }
   VDA5050_INFO("[AGV] Created AGV instance: {}", agv_id_);
+  // setup_subscriptions() must be called by the constructor's caller
+  // after make_shared returns — weak_from_this() is only valid once
+  // the shared_ptr ownership has been associated.
 }
 
 AGV::~AGV()
 {
   VDA5050_INFO("[AGV] Destroying AGV instance: {}", agv_id_);
 
-  // Stop queue processor
-  stop_queue_processor();
+  // Teardown order matters (per CLAUDE.md):
+  //   1. Stop spinning   — halt the queue processor and heartbeat threads
+  //   2. Release resources — unsubscribe per-topic; drop protocol_adapter_
+  //   3. Join threads     — handled inside stop_queue_processor() and
+  //                         cleanup_heartbeat() above
 
-  // Cleanup heartbeat
+  // 1. Stop spinning
+  stop_queue_processor();
   cleanup_heartbeat();
 
+  // 2. Release resources — unsubscribe via ProtocolAdapter so the broker
+  // stops routing to lambdas captured at subscribe time, then drop the
+  // shared_ptr. The underlying MqttClient stays alive (master owns it);
+  // only the per-AGV typed wrapper goes away.
+  if (protocol_adapter_)
+  {
+    protocol_adapter_->unsubscribe<vda5050_types::Connection>();
+    protocol_adapter_->unsubscribe<vda5050_types::State>();
+    protocol_adapter_->unsubscribe<vda5050_types::Factsheet>();
+    protocol_adapter_->unsubscribe<vda5050_types::Visualization>();
+  }
+  protocol_adapter_.reset();
+
   VDA5050_INFO("[AGV] AGV instance destroyed: {}", agv_id_);
+}
+
+void AGV::setup_subscriptions()
+{
+  if (!protocol_adapter_)
+  {
+    return;
+  }
+
+  create_subscription<vda5050_types::Connection>(
+    [this](const auto& msg) { handle_connection(msg); }, ConnectionQos);
+  create_subscription<vda5050_types::State>(
+    [this](const auto& msg) { handle_state(msg); }, StateQos);
+  create_subscription<vda5050_types::Factsheet>(
+    [this](const auto& msg) { handle_factsheet(msg); }, FactsheetQos);
+  create_subscription<vda5050_types::Visualization>(
+    [this](const auto& msg) { handle_visualization(msg); }, VisualizationQos);
 }
 
 void AGV::stop()
@@ -311,6 +346,12 @@ void AGV::handle_connection(const vda5050_types::Connection& msg)
     cleanup_heartbeat();
     stop_queue_processor();
   }
+
+  // Dispatch to user override
+  if (auto p = parent_.lock())
+  {
+    p->on_connection(agv_id_, msg);
+  }
 }
 
 void AGV::handle_state(const vda5050_types::State& msg)
@@ -333,20 +374,42 @@ void AGV::handle_state(const vda5050_types::State& msg)
 
   // Update operational state to AVAILABLE
   set_operational_state(AGVState::AVAILABLE);
+
+  // Dispatch to user override
+  if (auto p = parent_.lock())
+  {
+    p->on_state(agv_id_, msg);
+  }
 }
 
 void AGV::handle_factsheet(const vda5050_types::Factsheet& msg)
 {
-  std::lock_guard<std::mutex> lock(data_mutex_);
-  last_factsheet_ = msg;
-  last_factsheet_time_ = Clock::now();
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    last_factsheet_ = msg;
+    last_factsheet_time_ = Clock::now();
+  }
+
+  // Dispatch to user override
+  if (auto p = parent_.lock())
+  {
+    p->on_factsheet(agv_id_, msg);
+  }
 }
 
 void AGV::handle_visualization(const vda5050_types::Visualization& msg)
 {
-  std::lock_guard<std::mutex> lock(data_mutex_);
-  last_visualization_ = msg;
-  last_visualization_time_ = Clock::now();
+  {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    last_visualization_ = msg;
+    last_visualization_time_ = Clock::now();
+  }
+
+  // Dispatch to user override
+  if (auto p = parent_.lock())
+  {
+    p->on_visualization(agv_id_, msg);
+  }
 }
 
 // ============================================================================
@@ -587,45 +650,29 @@ void AGV::process_queues()
 // Publishing
 // ============================================================================
 
-void AGV::publish_message(
-  const std::string& topic, const std::string& payload, int qos,
-  const std::string& label)
-{
-  if (!mqtt_client_)
-  {
-    VDA5050_WARN(
-      "[AGV] Cannot publish {}: no MQTT client for {}", label, agv_id_);
-    return;
-  }
-
-  try
-  {
-    mqtt_client_->connect();
-    mqtt_client_->publish(build_topic(topic), payload, qos);
-    mqtt_client_->disconnect();
-
-    VDA5050_INFO("[AGV] Published {} to AGV: {}", label, agv_id_);
-  }
-  catch (const std::exception& e)
-  {
-    VDA5050_WARN(
-      "[AGV] Failed to publish {} for {}: {}", label, agv_id_, e.what());
-  }
-}
-
 void AGV::publish_order(const vda5050_types::Order& order)
 {
-  nlohmann::json j;
-  vda5050_types::to_json(j, order);
-  publish_message(OrderTopic, j.dump(), OrderQos, "order");
+  if (!protocol_adapter_)
+  {
+    VDA5050_WARN(
+      "[AGV] Cannot publish order: no protocol adapter for {}", agv_id_);
+    return;
+  }
+  protocol_adapter_->publish<vda5050_types::Order>(
+    order, static_cast<int>(OrderQos));
 }
 
 void AGV::publish_instant_actions(const vda5050_types::InstantActions& actions)
 {
-  nlohmann::json j;
-  vda5050_types::to_json(j, actions);
-  publish_message(
-    InstantActionsTopic, j.dump(), InstantActionsQos, "instant actions");
+  if (!protocol_adapter_)
+  {
+    VDA5050_WARN(
+      "[AGV] Cannot publish instant actions: no protocol adapter for {}",
+      agv_id_);
+    return;
+  }
+  protocol_adapter_->publish<vda5050_types::InstantActions>(
+    actions, static_cast<int>(InstantActionsQos));
 }
 
 // ============================================================================

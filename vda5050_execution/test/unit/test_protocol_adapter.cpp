@@ -25,16 +25,30 @@
 #include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
 
 #include <vda5050_types/connection.hpp>
+#include <vda5050_types/factsheet.hpp>
+#include <vda5050_types/instant_actions.hpp>
 #include <vda5050_types/order.hpp>
 #include <vda5050_types/state.hpp>
+#include <vda5050_types/visualization.hpp>
 
 #include "vda5050_execution/protocol_adapter.hpp"
 
 using vda5050_types::Connection;
+using vda5050_types::Factsheet;
+using vda5050_types::InstantActions;
 using vda5050_types::Order;
 using vda5050_types::State;
+using vda5050_types::Visualization;
 
+// Default-constructible types whose JSON round-trip works without
+// hand-populated fields. Factsheet is excluded because its default
+// AGVClass enum is invalid and serialization throws.
 using MessageTypes = testing::Types<Connection, Order, State>;
+
+// All valid types the master uses — exercised by the unsubscribe path
+// which never serializes / deserializes the message body.
+using AllMessageTypes = testing::Types<
+  Connection, Order, State, Factsheet, Visualization, InstantActions>;
 
 class MockMqttClient : public vda5050_core::mqtt_client::MqttClientInterface
 {
@@ -147,6 +161,43 @@ TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
   EXPECT_TRUE(success);
 }
 
+TYPED_TEST(ProtocolAdapterTest, UnsubscribeMessage)
+{
+  vda5050_core::mqtt_client::MqttClientInterface::MessageHandler
+    captured_handler;
+
+  EXPECT_CALL(
+    *this->mock_,
+    subscribe(testing::StartsWith(this->topic_prefix_), testing::_, this->qos_))
+    .WillOnce(testing::SaveArg<1>(&captured_handler));
+
+  std::atomic_bool callback_invoked = false;
+  this->adapter_->template subscribe<TypeParam>(
+    [&](TypeParam /*msg*/, std::optional<vda5050_types::Error> err) {
+      if (!err.has_value()) callback_invoked = true;
+    },
+    this->qos_);
+
+  // While subscribed, the captured wrapper should dispatch to the
+  // user callback.
+  TypeParam msg;
+  nlohmann::json j = msg;
+  captured_handler(this->topic_prefix_, j.dump());
+  EXPECT_TRUE(callback_invoked);
+
+  // Unsubscribe.
+  EXPECT_CALL(
+    *this->mock_, unsubscribe(testing::StartsWith(this->topic_prefix_)))
+    .Times(1);
+  this->adapter_->template unsubscribe<TypeParam>();
+
+  // Invoking the captured wrapper after unsubscribe should NOT
+  // dispatch — the wrapper is now inert.
+  callback_invoked = false;
+  captured_handler(this->topic_prefix_, j.dump());
+  EXPECT_FALSE(callback_invoked);
+}
+
 TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
 {
   TypeParam msg;
@@ -168,4 +219,27 @@ TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
 
   this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
   this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
+}
+
+// =============================================================================
+// Unsubscribe coverage — runs across ALL valid message types (including
+// Factsheet, which the publish/subscribe content tests above can't
+// exercise because a default-constructed Factsheet has an invalid
+// AGVClass enum and serialization throws). The unsubscribe path never
+// serializes the message body, so all 6 types are safe to instantiate.
+// =============================================================================
+
+template <typename T>
+class ProtocolAdapterUnsubscribeTest : public ProtocolAdapterTest<T>
+{};
+
+TYPED_TEST_SUITE(ProtocolAdapterUnsubscribeTest, AllMessageTypes);
+
+TYPED_TEST(ProtocolAdapterUnsubscribeTest, UnsubscribeWithoutSubscription)
+{
+  EXPECT_CALL(
+    *this->mock_, unsubscribe(testing::StartsWith(this->topic_prefix_)))
+    .Times(1);
+
+  this->adapter_->template unsubscribe<TypeParam>();
 }
