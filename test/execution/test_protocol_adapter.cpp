@@ -191,7 +191,7 @@ TYPED_TEST(ProtocolAdapterTest, UnsubscribeMessage)
 
   std::atomic_bool callback_invoked = false;
   this->adapter_->template subscribe<TypeParam>(
-    [&](TypeParam /*msg*/, std::optional<vda5050_types::Error> err) {
+    [&](TypeParam /*msg*/, std::optional<vda5050_core::types::Error> err) {
       if (!err.has_value()) callback_invoked = true;
     },
     this->qos_);
