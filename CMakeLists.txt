@@ -16,14 +16,7 @@ find_package(nlohmann_json REQUIRED)
 
 include(GNUInstallDirs)
 
-option(ENABLE_ROS2 "Enable ROS 2 message support in JSON utilities" OFF)
-if(ament_cmake_FOUND AND ENABLE_ROS2)
-  message(STATUS "Building vda5050_json_utils with ROS 2 support")
-  find_package(vda5050_interfaces REQUIRED)
-else()
-  message(STATUS "Building vda5050_json_utils without ROS 2 support")
-endif()
-
+# Types
 add_library(types INTERFACE)
 add_library(${PROJECT_NAME}::types ALIAS types)
 target_include_directories(types
@@ -31,6 +24,15 @@ target_include_directories(types
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+# JSON Utils
+option(ENABLE_ROS2 "Enable ROS 2 message support in JSON utilities" OFF)
+if(ament_cmake_FOUND AND ENABLE_ROS2)
+  message(STATUS "Building vda5050_json_utils with ROS 2 support")
+  find_package(vda5050_interfaces REQUIRED)
+else()
+  message(STATUS "Building vda5050_json_utils without ROS 2 support")
+endif()
 
 add_library(json_utils INTERFACE)
 add_library(${PROJECT_NAME}::json_utils ALIAS json_utils)
@@ -57,6 +59,7 @@ if(ament_cmake_FOUND AND ENABLE_ROS2)
   target_compile_definitions(json_utils INTERFACE ENABLE_ROS2)
 endif()
 
+# Logger
 add_library(logger SHARED src/logger/logger.cpp)
 add_library(${PROJECT_NAME}::logger ALIAS logger)
 target_link_libraries(logger PUBLIC fmt::fmt)
@@ -66,6 +69,7 @@ target_include_directories(logger
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+# Errors
 add_library(errors INTERFACE)
 add_library(${PROJECT_NAME}::errors ALIAS errors)
 target_include_directories(errors
@@ -74,6 +78,7 @@ target_include_directories(errors
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+# Order Utils
 add_library(order_utils SHARED src/order_utils/order_graph_validator.cpp)
 add_library(${PROJECT_NAME}::order_utils ALIAS order_utils)
 target_link_libraries(order_utils PUBLIC types errors)
@@ -83,12 +88,29 @@ target_include_directories(order_utils
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+# Transport
 add_library(transport src/transport/paho_mqtt_client.cpp)
 add_library(${PROJECT_NAME}::transport ALIAS transport)
 target_link_libraries(transport
   PUBLIC
     PahoMqttCpp::paho-mqttpp3
     logger
+)
+target_include_directories(transport
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Execution
+file(GLOB_RECURSE execution_srcs "src/execution/*.cpp")
+add_library(execution ${execution_srcs})
+add_library(${PROJECT_NAME}::execution ALIAS execution)
+target_link_libraries(execution
+  PUBLIC
+    types
+    json_utils
+    transport
 )
 target_include_directories(transport
   PUBLIC
@@ -103,6 +125,7 @@ set(lib_targets
   errors
   order_utils
   transport
+  execution
 )
 
 install(
@@ -147,14 +170,18 @@ if(BUILD_TESTING)
     if(ENABLE_ROS2)
       list(APPEND json_tests test/json_utils/test_json_utils_ros2.cpp)
     endif()
-
     ament_add_gmock(test_json_utils ${json_tests})
     target_link_libraries(test_json_utils vda5050_core::json_utils)
-    target_include_directories(test_json_utils
-      PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+
+    ament_add_gmock(test_order_utils
+      test/order_utils/unit_order_graph_validator.cpp)
+    target_link_libraries(test_order_utils vda5050_core::order_utils)
+
+    ament_add_gmock(test_logger
+      test/logger/unit_default_logger.cpp
+      test/logger/unit_logger.cpp
     )
+    target_link_libraries(test_logger vda5050_core::logger)
 
     ament_add_gmock(test_transport
       test/transport/unit_mqtt_client_interface.cpp
@@ -162,11 +189,14 @@ if(BUILD_TESTING)
     )
     target_link_libraries(test_transport vda5050_core::transport)
 
-    ament_add_gtest(test_logger
-      test/logger/unit_default_logger.cpp
-      test/logger/unit_logger.cpp
+    ament_add_gmock(test_execution
+      test/execution/test_engine.cpp
+      test/execution/test_event_queue.cpp
+      test/execution/test_handler.cpp
+      test/execution/test_protocol_adapter.cpp
+      test/execution/test_provider.cpp
     )
-    target_link_libraries(test_logger vda5050_core::logger)
+    target_link_libraries(test_execution vda5050_core::execution)
   else()
     enable_testing()
 
@@ -188,15 +218,6 @@ if(BUILD_TESTING)
       ${PROJECT_NAME}::json_utils
     )
 
-    add_executable(test_transport
-      test/transport/unit_mqtt_client_interface.cpp
-      test/transport/integration_paho_mqtt_client.cpp
-    )
-    target_link_libraries(test_transport
-      GTest::gmock_main
-      ${PROJECT_NAME}::transport
-    )
-
     add_executable(test_logger
       test/logger/unit_logger.cpp
       test/logger/unit_default_logger.cpp
@@ -206,11 +227,33 @@ if(BUILD_TESTING)
       ${PROJECT_NAME}::logger
     )
 
+    add_executable(test_transport
+      test/transport/unit_mqtt_client_interface.cpp
+      test/transport/integration_paho_mqtt_client.cpp
+    )
+    target_link_libraries(test_transport
+      GTest::gmock_main
+      ${PROJECT_NAME}::transport
+    )
+
+    add_executable(test_execution
+      test/execution/test_engine.cpp
+      test/execution/test_event_queue.cpp
+      test/execution/test_handler.cpp
+      test/execution/test_protocol_adapter.cpp
+      test/execution/test_provider.cpp
+    )
+    target_link_libraries(test_execution
+      GTest::gmock_main
+      ${PROJECT_NAME}::execution
+    )
+
     set(test_execs
       test_order_utils
       test_json_utils
-      test_transport
       test_logger
+      test_transport
+      test_execution
     )
     foreach(exec ${test_execs})
       gtest_discover_tests(${exec})
