@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
-#define VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
+#ifndef VDA5050_CORE__EXECUTION__PROTOCOL_ADAPTER_HPP_
+#define VDA5050_CORE__EXECUTION__PROTOCOL_ADAPTER_HPP_
 
 #include <fmt/core.h>
 
@@ -30,47 +30,50 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include <vda5050_core/logger/logger.hpp>
-#include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
+#include "vda5050_core/logger/logger.hpp"
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
 
-#include <vda5050_json_utils/serialization.hpp>
-#include <vda5050_types/connection.hpp>
-#include <vda5050_types/error.hpp>
-#include <vda5050_types/factsheet.hpp>
-#include <vda5050_types/header.hpp>
-#include <vda5050_types/instant_actions.hpp>
-#include <vda5050_types/order.hpp>
-#include <vda5050_types/state.hpp>
-#include <vda5050_types/visualization.hpp>
+#include "vda5050_core/json_utils/serialization.hpp"
 
-namespace vda5050_execution {
+#include "vda5050_core/types/connection.hpp"
+#include "vda5050_core/types/error.hpp"
+#include "vda5050_core/types/factsheet.hpp"
+#include "vda5050_core/types/header.hpp"
+#include "vda5050_core/types/instant_actions.hpp"
+#include "vda5050_core/types/order.hpp"
+#include "vda5050_core/types/state.hpp"
+#include "vda5050_core/types/visualization.hpp"
+
+namespace vda5050_core {
+
+namespace execution {
 
 template <typename T>
 struct is_valid_message : std::false_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::Connection> : std::true_type
+struct is_valid_message<vda5050_core::types::Connection> : std::true_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::State> : std::true_type
+struct is_valid_message<vda5050_core::types::State> : std::true_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::Order> : std::true_type
+struct is_valid_message<vda5050_core::types::Order> : std::true_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::InstantActions> : std::true_type
+struct is_valid_message<vda5050_core::types::InstantActions> : std::true_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::Factsheet> : std::true_type
+struct is_valid_message<vda5050_core::types::Factsheet> : std::true_type
 {};
 
 template <>
-struct is_valid_message<vda5050_types::Visualization> : std::true_type
+struct is_valid_message<vda5050_core::types::Visualization> : std::true_type
 {};
 
 template <typename T>
@@ -80,9 +83,9 @@ class ProtocolAdapter : public std::enable_shared_from_this<ProtocolAdapter>
 {
 public:
   static std::shared_ptr<ProtocolAdapter> make(
-    std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+    std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
     const std::string& interface, const std::string& version,
-    const std::string& manufacturer, const std::string serial_number);
+    const std::string& manufacturer, const std::string& serial_number);
 
   template <typename MessageT>
   void publish(MessageT message, int qos, bool retained = false)
@@ -97,7 +100,7 @@ public:
 
     try
     {
-      vda5050_types::Header header{
+      vda5050_core::types::Header header{
         header_ids_[type_idx]++, std::chrono::system_clock::now(), version_,
         manufacturer_, serial_number_};
       message.header = header;
@@ -122,7 +125,8 @@ public:
 
   template <typename MessageT>
   void subscribe(
-    std::function<void(MessageT, std::optional<vda5050_types::Error>)> callback,
+    std::function<void(MessageT, std::optional<vda5050_core::types::Error>)>
+      callback,
     int qos)
   {
     static_assert(
@@ -143,11 +147,11 @@ public:
       }
       catch (const nlohmann::json::exception& e)
       {
-        vda5050_types::Error error;
+        vda5050_core::types::Error error;
         error.error_type = "JSON_DESERIALIZATION_ERROR";
         error.error_description = fmt::format(
           "Failed to parse JSOn recevied on topic {}: {}", topic, e.what());
-        error.error_level = vda5050_types::ErrorLevel::FATAL;
+        error.error_level = vda5050_core::types::ErrorLevel::FATAL;
         callback(MessageT{}, error);
       }
       catch (const std::exception& e)
@@ -163,11 +167,11 @@ public:
 
 private:
   ProtocolAdapter(
-    std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+    std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
     const std::string& interface, const std::string& version,
-    const std::string& manufacturer, const std::string serial_number);
+    const std::string& manufacturer, const std::string& serial_number);
 
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
+  std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client_;
 
   std::unordered_map<std::type_index, std::string> topic_names_;
   std::unordered_map<std::type_index, uint32_t> header_ids_;
@@ -178,6 +182,7 @@ private:
   std::string serial_number_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__PROTOCOL_ADAPTER_HPP_
+#endif  // VDA5050_CORE__EXECUTION__PROTOCOL_ADAPTER_HPP_

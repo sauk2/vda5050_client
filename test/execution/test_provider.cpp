@@ -22,15 +22,12 @@
 #include <thread>
 #include <vector>
 
-#include <vda5050_types/agv_position.hpp>
-#include <vda5050_types/battery_state.hpp>
-
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/provider.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/provider.hpp"
 
 namespace {
 
-using namespace vda5050_execution;  // NOLINT
+using namespace vda5050_core::execution;  // NOLINT
 
 struct UpdateA : public Initialize<UpdateA, UpdateBase>
 {};
@@ -66,8 +63,7 @@ struct MockNavigationStatus
 class ProviderTest : public ::testing::Test
 {
 protected:
-  std::shared_ptr<vda5050_execution::Provider> provider =
-    std::make_shared<vda5050_execution::Provider>();
+  std::shared_ptr<Provider> provider = std::make_shared<Provider>();
 };
 
 TEST_F(ProviderTest, SingleUpdatePush)

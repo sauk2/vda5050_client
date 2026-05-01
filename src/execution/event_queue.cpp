@@ -18,9 +18,11 @@
 
 #include <algorithm>
 
-#include "vda5050_execution/event_queue.hpp"
+#include "vda5050_core/execution/event_queue.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 //=============================================================================
 void EventQueue::push(std::shared_ptr<EventBase> event, Priority priority)
@@ -71,8 +73,8 @@ bool EventQueue::empty() const
 void EventQueue::clear_normal()
 {
   std::lock_guard<std::mutex> lock(mutex_);
-  std::queue<std::shared_ptr<EventBase>> empty;
-  std::swap(normal_queue_, empty);
+  std::queue<std::shared_ptr<EventBase>> empty_queue;
+  std::swap(normal_queue_, empty_queue);
 }
 
 //=============================================================================
@@ -84,4 +86,5 @@ std::shared_ptr<EventBase> EventQueue::pop_internal(
   return event;
 }
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core

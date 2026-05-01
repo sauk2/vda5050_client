@@ -16,15 +16,17 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_
-#define VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_
+#ifndef VDA5050_CORE__EXECUTION__STRATEGY_INTERFACE_HPP_
+#define VDA5050_CORE__EXECUTION__STRATEGY_INTERFACE_HPP_
 
 #include <memory>
 
-#include "vda5050_execution/context_interface.hpp"
-#include "vda5050_execution/engine.hpp"
+#include "vda5050_core/execution/context_interface.hpp"
+#include "vda5050_core/execution/engine.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 class StrategyInterface
 {
@@ -49,6 +51,7 @@ private:
   std::shared_ptr<Engine> engine_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__STRATEGY_INTERFACE_HPP_
+#endif  // VDA5050_CORE__EXECUTION__STRATEGY_INTERFACE_HPP_

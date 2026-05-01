@@ -16,16 +16,18 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__EVENT_QUEUE_HPP_
-#define VDA5050_EXECUTION__EVENT_QUEUE_HPP_
+#ifndef VDA5050_CORE__EXECUTION__EVENT_QUEUE_HPP_
+#define VDA5050_CORE__EXECUTION__EVENT_QUEUE_HPP_
 
 #include <memory>
 #include <mutex>
 #include <queue>
 
-#include "vda5050_execution/base.hpp"
+#include "vda5050_core/execution/base.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 enum class Priority
 {
@@ -57,6 +59,7 @@ private:
   mutable std::mutex mutex_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__EVENT_QUEUE_HPP_
+#endif  // VDA5050_CORE__EXECUTION__EVENT_QUEUE_HPP_

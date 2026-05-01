@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__ENGINE_HPP_
-#define VDA5050_EXECUTION__ENGINE_HPP_
+#ifndef VDA5050_CORE__EXECUTION__ENGINE_HPP_
+#define VDA5050_CORE__EXECUTION__ENGINE_HPP_
 
 #include <chrono>
 #include <functional>
@@ -27,10 +27,12 @@
 #include <utility>
 #include <vector>
 
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/event_queue.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/event_queue.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 class Engine : public std::enable_shared_from_this<Engine>
 {
@@ -109,12 +111,15 @@ private:
   std::unordered_map<std::type_index, std::vector<ErasedCallback>> callbacks_;
   std::mutex registry_mutex_;
 
-  mutable bool waiting_;
-  mutable std::chrono::steady_clock::time_point wait_timeout_;
-  mutable std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_;
+  mutable bool waiting_ = false;
+  mutable std::chrono::steady_clock::time_point wait_timeout_ =
+    std::chrono::steady_clock::time_point::min();
+  mutable std::function<bool(std::shared_ptr<UpdateBase>)> wait_predicate_ =
+    nullptr;
   mutable std::mutex wait_mutex_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__ENGINE_HPP_
+#endif  // VDA5050_CORE__EXECUTION__ENGINE_HPP_

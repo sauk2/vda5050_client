@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__HANDLER_HPP_
-#define VDA5050_EXECUTION__HANDLER_HPP_
+#ifndef VDA5050_CORE__EXECUTION__HANDLER_HPP_
+#define VDA5050_CORE__EXECUTION__HANDLER_HPP_
 
 #include <atomic>
 #include <condition_variable>
 #include <memory>
 #include <vector>
 
-#include "vda5050_execution/context_interface.hpp"
-#include "vda5050_execution/strategy_interface.hpp"
+#include "vda5050_core/execution/context_interface.hpp"
+#include "vda5050_core/execution/strategy_interface.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 class Handler : public std::enable_shared_from_this<Handler>
 {
@@ -68,7 +70,7 @@ public:
 private:
   Handler(
     std::shared_ptr<ContextInterface> context,
-    std::vector<std::shared_ptr<StrategyInterface>> strategies);
+    const std::vector<std::shared_ptr<StrategyInterface>>& strategies);
 
   void step_active_strategies();
 
@@ -83,6 +85,7 @@ private:
   std::mutex mutex_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__HANDLER_HPP_
+#endif  // VDA5050_CORE__EXECUTION__HANDLER_HPP_

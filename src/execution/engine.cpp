@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/engine.hpp"
+#include "vda5050_core/execution/engine.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 //=============================================================================
 void Engine::emit_shared(std::shared_ptr<EventBase> event, Priority priority)
@@ -83,4 +85,5 @@ void Engine::check_timeout() const
     reset_internal_wait();
 }
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core

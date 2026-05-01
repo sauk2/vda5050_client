@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 
+#include <thread>
 #include <utility>
 
-#include "vda5050_execution/handler.hpp"
+#include "vda5050_core/execution/handler.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 //=============================================================================
 std::shared_ptr<Handler> Handler::make(
@@ -68,7 +71,7 @@ void Handler::spin(std::chrono::milliseconds timeout)
   running_ = true;
   spinning_ = true;
 
-  while (running_)
+  while (true)
   {
     std::unique_lock lock(mutex_);
     cv_.wait_for(lock, timeout);
@@ -111,13 +114,16 @@ void Handler::stop()
     wake();
   }
 
-  while (spinning_) continue;
+  while (spinning_)
+  {
+    std::this_thread::yield();
+  }
 }
 
 //=============================================================================
 Handler::Handler(
   std::shared_ptr<ContextInterface> context,
-  std::vector<std::shared_ptr<StrategyInterface>> strategies)
+  const std::vector<std::shared_ptr<StrategyInterface>>& strategies)
 : context_(std::move(context)), running_(false), spinning_(false)
 {
   context_->init();
@@ -140,4 +146,5 @@ void Handler::step_active_strategies()
   }
 }
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core

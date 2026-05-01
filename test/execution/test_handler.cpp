@@ -21,14 +21,14 @@
 #include <atomic>
 #include <thread>
 
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/context_interface.hpp"
-#include "vda5050_execution/handler.hpp"
-#include "vda5050_execution/strategy_interface.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/context_interface.hpp"
+#include "vda5050_core/execution/handler.hpp"
+#include "vda5050_core/execution/strategy_interface.hpp"
 
 namespace {
 
-using namespace vda5050_execution;  // NOLINT
+using namespace vda5050_core::execution;  // NOLINT
 
 class MockContext : public ContextInterface
 {

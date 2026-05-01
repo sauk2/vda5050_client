@@ -22,12 +22,12 @@
 #include <string>
 #include <thread>
 
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/event_queue.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/event_queue.hpp"
 
 namespace {
 
-using namespace vda5050_execution;  // NOLINT
+using namespace vda5050_core::execution;  // NOLINT
 
 struct EventA : public Initialize<EventA, EventBase>
 {
@@ -66,8 +66,7 @@ struct ComplexEvent : public Initialize<ComplexEvent, EventBase>
 class EventQueueTest : public ::testing::Test
 {
 protected:
-  std::shared_ptr<vda5050_execution::EventQueue> queue =
-    std::make_shared<vda5050_execution::EventQueue>();
+  std::shared_ptr<EventQueue> queue = std::make_shared<EventQueue>();
 };
 
 TEST_F(EventQueueTest, MultiEventPop)

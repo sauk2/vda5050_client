@@ -16,26 +16,41 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/provider.hpp"
+#ifndef VDA5050_CORE__EXECUTION__BASE_HPP_
+#define VDA5050_CORE__EXECUTION__BASE_HPP_
 
-namespace vda5050_execution {
+#include <typeindex>
 
-//=============================================================================
-void Provider::push_shared(std::shared_ptr<UpdateBase> update)
+namespace vda5050_core {
+
+namespace execution {
+
+struct Base
 {
-  if (!update) return;
+  virtual ~Base() = default;
+  virtual std::type_index get_type() const = 0;
+};
 
-  std::vector<ErasedProvider> targets;
+struct EventBase : public Base
+{};
+
+struct UpdateBase : public Base
+{};
+
+struct ResourceBase : public Base
+{};
+
+template <typename DerivedT, typename BaseT>
+struct Initialize : public BaseT
+{
+  static inline const std::type_index type = std::type_index(typeid(DerivedT));
+  std::type_index get_type() const override
   {
-    std::lock_guard<std::mutex> lock(registry_mutex_);
-    auto it = providers_.find(update->get_type());
-    if (it != providers_.end()) targets = it->second;
+    return type;
   }
+};
 
-  for (auto cb : targets)
-  {
-    cb(update);
-  }
-}
+}  // namespace execution
+}  // namespace vda5050_core
 
-}  // namespace vda5050_execution
+#endif  // VDA5050_CORE__EXECUTION__BASE_HPP_

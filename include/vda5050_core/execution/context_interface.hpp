@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__CONTEXT_INTERFACE_HPP_
-#define VDA5050_EXECUTION__CONTEXT_INTERFACE_HPP_
+#ifndef VDA5050_CORE__EXECUTION__CONTEXT_INTERFACE_HPP_
+#define VDA5050_CORE__EXECUTION__CONTEXT_INTERFACE_HPP_
 
 #include <memory>
 #include <type_traits>
 #include <typeindex>
 #include <utility>
 
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/provider.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/provider.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 class ContextInterface
 {
@@ -97,6 +99,7 @@ private:
   std::mutex notify_mutex_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__CONTEXT_INTERFACE_HPP_
+#endif  // VDA5050_CORE__EXECUTION__CONTEXT_INTERFACE_HPP_

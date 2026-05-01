@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_EXECUTION__PROVIDER_HPP_
-#define VDA5050_EXECUTION__PROVIDER_HPP_
+#ifndef VDA5050_CORE__EXECUTION__PROVIDER_HPP_
+#define VDA5050_CORE__EXECUTION__PROVIDER_HPP_
 
 #include <functional>
 #include <memory>
@@ -26,9 +26,11 @@
 #include <utility>
 #include <vector>
 
-#include "vda5050_execution/base.hpp"
+#include "vda5050_core/execution/base.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 class Provider : public std::enable_shared_from_this<Provider>
 {
@@ -68,6 +70,7 @@ private:
   std::mutex registry_mutex_;
 };
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
 
-#endif  // VDA5050_EXECUTION__PROVIDER_HPP_
+#endif  // VDA5050_CORE__EXECUTION__PROVIDER_HPP_

@@ -21,15 +21,15 @@
 #include <atomic>
 #include <thread>
 
-#include <vda5050_types/edge.hpp>
-#include <vda5050_types/node.hpp>
+#include "vda5050_core/types/edge.hpp"
+#include "vda5050_core/types/node.hpp"
 
-#include "vda5050_execution/base.hpp"
-#include "vda5050_execution/engine.hpp"
+#include "vda5050_core/execution/base.hpp"
+#include "vda5050_core/execution/engine.hpp"
 
 namespace {
 
-using namespace vda5050_execution;  // NOLINT
+using namespace vda5050_core::execution;  // NOLINT
 
 struct EventA : public Initialize<EventA, EventBase>
 {};

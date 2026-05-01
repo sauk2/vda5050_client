@@ -22,21 +22,37 @@
 #include <memory>
 #include <string>
 
-#include <vda5050_core/mqtt_client/mqtt_client_interface.hpp>
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
 
-#include <vda5050_types/connection.hpp>
-#include <vda5050_types/order.hpp>
-#include <vda5050_types/state.hpp>
+#include "vda5050_core/types/agv_class.hpp"
+#include "vda5050_core/types/agv_kinematic.hpp"
+#include "vda5050_core/types/connection.hpp"
+#include "vda5050_core/types/error.hpp"
+#include "vda5050_core/types/factsheet.hpp"
+#include "vda5050_core/types/instant_actions.hpp"
+#include "vda5050_core/types/order.hpp"
+#include "vda5050_core/types/state.hpp"
+#include "vda5050_core/types/visualization.hpp"
 
-#include "vda5050_execution/protocol_adapter.hpp"
+#include "vda5050_core/execution/protocol_adapter.hpp"
 
-using vda5050_types::Connection;
-using vda5050_types::Order;
-using vda5050_types::State;
+using vda5050_core::execution::ProtocolAdapter;
+using vda5050_core::transport::MqttClientInterface;
 
-using MessageTypes = testing::Types<Connection, Order, State>;
+using vda5050_core::types::AGVClass;
+using vda5050_core::types::AGVKinematic;
+using vda5050_core::types::Connection;
+using vda5050_core::types::Error;
+using vda5050_core::types::Factsheet;
+using vda5050_core::types::InstantActions;
+using vda5050_core::types::Order;
+using vda5050_core::types::State;
+using vda5050_core::types::Visualization;
 
-class MockMqttClient : public vda5050_core::mqtt_client::MqttClientInterface
+using MessageTypes = testing::Types<
+  Connection, Factsheet, InstantActions, Order, State, Visualization>;
+
+class MockMqttClient : public MqttClientInterface
 {
 public:
   MOCK_METHOD(void, connect, (), (override));
@@ -60,7 +76,7 @@ class ProtocolAdapterTest : public testing::Test
 {
 protected:
   std::shared_ptr<MockMqttClient> mock_;
-  std::shared_ptr<vda5050_execution::ProtocolAdapter> adapter_;
+  std::shared_ptr<ProtocolAdapter> adapter_;
 
   std::string interface_;
   std::string version_;
@@ -81,7 +97,7 @@ protected:
 
     mock_ = std::make_shared<MockMqttClient>();
 
-    adapter_ = vda5050_execution::ProtocolAdapter::make(
+    adapter_ = ProtocolAdapter::make(
       mock_, interface_, version_, manufacturer_, serial_number_);
 
     topic_prefix_ = fmt::format(
@@ -98,11 +114,29 @@ protected:
   }
 };
 
+template <typename T>
+T make_valid_message();
+
+template <>
+Factsheet make_valid_message()
+{
+  Factsheet msg;
+  msg.type_specification.agv_kinematic = AGVKinematic::DIFF;
+  msg.type_specification.agv_class = AGVClass::CARRIER;
+  return msg;
+}
+
+template <typename T>
+T make_valid_message()
+{
+  return T{};
+}
+
 TYPED_TEST_SUITE(ProtocolAdapterTest, MessageTypes);
 
 TYPED_TEST(ProtocolAdapterTest, PublishMessage)
 {
-  TypeParam msg;
+  TypeParam msg = make_valid_message<TypeParam>();
 
   EXPECT_CALL(
     *this->mock_, publish(
@@ -124,8 +158,7 @@ TYPED_TEST(ProtocolAdapterTest, PublishMessage)
 
 TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
 {
-  vda5050_core::mqtt_client::MqttClientInterface::MessageHandler
-    captured_handler;
+  MqttClientInterface::MessageHandler captured_handler;
 
   EXPECT_CALL(
     *this->mock_,
@@ -135,12 +168,12 @@ TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
   std::atomic_bool success = false;
 
   this->adapter_->template subscribe<TypeParam>(
-    [&](TypeParam /*msg*/, std::optional<vda5050_types::Error> err) {
+    [&](TypeParam /*msg*/, std::optional<Error> err) {
       if (!err.has_value()) success = true;
     },
     this->qos_);
 
-  TypeParam msg;
+  TypeParam msg = make_valid_message<TypeParam>();
   nlohmann::json j = msg;
 
   captured_handler(this->topic_prefix_, j.dump());
@@ -149,7 +182,7 @@ TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
 
 TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
 {
-  TypeParam msg;
+  TypeParam msg = make_valid_message<TypeParam>();
 
   std::atomic_uint32_t header_count = 0;
 

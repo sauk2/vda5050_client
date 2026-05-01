@@ -16,15 +16,17 @@
  * limitations under the License.
  */
 
-#include "vda5050_execution/protocol_adapter.hpp"
+#include "vda5050_core/execution/protocol_adapter.hpp"
 
-namespace vda5050_execution {
+namespace vda5050_core {
+
+namespace execution {
 
 //=============================================================================
 std::shared_ptr<ProtocolAdapter> ProtocolAdapter::make(
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+  std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
   const std::string& interface, const std::string& version,
-  const std::string& manufacturer, const std::string serial_number)
+  const std::string& manufacturer, const std::string& serial_number)
 {
   auto adapter = std::shared_ptr<ProtocolAdapter>(new ProtocolAdapter(
     mqtt_client, interface, version, manufacturer, serial_number));
@@ -33,9 +35,9 @@ std::shared_ptr<ProtocolAdapter> ProtocolAdapter::make(
 
 //=============================================================================
 ProtocolAdapter::ProtocolAdapter(
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client,
+  std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
   const std::string& interface, const std::string& version,
-  const std::string& manufacturer, const std::string serial_number)
+  const std::string& manufacturer, const std::string& serial_number)
 : mqtt_client_(mqtt_client),
   interface_(interface),
   version_(version),
@@ -46,26 +48,27 @@ ProtocolAdapter::ProtocolAdapter(
     "{}/{}/{}/{}", interface_, version_, manufacturer_, serial_number_);
 
   topic_names_ = {
-    {std::type_index(typeid(vda5050_types::Connection)),
+    {std::type_index(typeid(vda5050_core::types::Connection)),
      fmt::format("{}/connection", topic_prefix)},
-    {std::type_index(typeid(vda5050_types::State)),
+    {std::type_index(typeid(vda5050_core::types::State)),
      fmt::format("{}/state", topic_prefix)},
-    {std::type_index(typeid(vda5050_types::Order)),
+    {std::type_index(typeid(vda5050_core::types::Order)),
      fmt::format("{}/order", topic_prefix)},
-    {std::type_index(typeid(vda5050_types::InstantActions)),
+    {std::type_index(typeid(vda5050_core::types::InstantActions)),
      fmt::format("{}/instantActions", topic_prefix)},
-    {std::type_index(typeid(vda5050_types::Factsheet)),
+    {std::type_index(typeid(vda5050_core::types::Factsheet)),
      fmt::format("{}/factsheet", topic_prefix)},
-    {std::type_index(typeid(vda5050_types::Visualization)),
+    {std::type_index(typeid(vda5050_core::types::Visualization)),
      fmt::format("{}/visualization", topic_prefix)}};
 
   header_ids_ = {
-    {std::type_index(typeid(vda5050_types::Connection)), 0},
-    {std::type_index(typeid(vda5050_types::State)), 0},
-    {std::type_index(typeid(vda5050_types::Order)), 0},
-    {std::type_index(typeid(vda5050_types::InstantActions)), 0},
-    {std::type_index(typeid(vda5050_types::Factsheet)), 0},
-    {std::type_index(typeid(vda5050_types::Visualization)), 0}};
+    {std::type_index(typeid(vda5050_core::types::Connection)), 0},
+    {std::type_index(typeid(vda5050_core::types::State)), 0},
+    {std::type_index(typeid(vda5050_core::types::Order)), 0},
+    {std::type_index(typeid(vda5050_core::types::InstantActions)), 0},
+    {std::type_index(typeid(vda5050_core::types::Factsheet)), 0},
+    {std::type_index(typeid(vda5050_core::types::Visualization)), 0}};
 }
 
-}  // namespace vda5050_execution
+}  // namespace execution
+}  // namespace vda5050_core
