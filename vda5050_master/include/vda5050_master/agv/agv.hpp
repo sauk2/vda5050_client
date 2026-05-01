@@ -29,11 +29,14 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <utility>
 
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
+#include "vda5050_core/logger/logger.hpp"
+#include "vda5050_execution/protocol_adapter.hpp"
 #include "vda5050_master/communication/heartbeat.hpp"
 #include "vda5050_master/standard_names.hpp"
 #include "vda5050_master/vda5050_interfaces.hpp"
+#include "vda5050_types/error.hpp"
 
 namespace vda5050_master {
 
@@ -61,12 +64,12 @@ enum class AGVState
  * - Outgoing message queue for orders and instant actions
  *
  * The VDA5050Master routes incoming messages to AGV instances and the AGV
- * handles outgoing messages via transient MQTT clients.
+ * handles incoming/outgoing messages via the VDA5050Execution ProtocolAdapter.
  *
  * Thread safety: Methods are thread-safe. Cached data access is protected
  * by mutexes.
  */
-class AGV
+class AGV : public std::enable_shared_from_this<AGV>
 {
 public:
   // Type aliases
@@ -75,18 +78,34 @@ public:
 
   /**
    * @brief Construct an AGV instance
+   *
+   * Caller must invoke setup_subscriptions() after make_shared
+   * returns; weak_from_this() is only valid once the shared_ptr
+   * has been associated.
+   *
+   * @param protocol_adapter Protocol adapter for pub/sub
    * @param manufacturer Manufacturer name
    * @param serial_number Serial number
-   * @param broker_address MQTT broker address for creating transient publish clients
    * @param max_queue_size Maximum number of outgoing messages to queue (default: 10)
    * @param drop_oldest If true, drop oldest message when queue full; if false, reject new (default: true)
    * @param state_heartbeat_interval State heartbeat timeout in seconds
+   * @param parent Optional non-owning back-pointer to the owning
+   *        VDA5050Master. When set, the AGV dispatches incoming
+   *        messages to the master's virtual callbacks (on_state,
+   *        on_connection, on_factsheet, on_visualization) after
+   *        caching them. Held as a `weak_ptr` so the AGV can detect
+   *        if the master is gone (returns null cleanly via `lock()`)
+   *        rather than silently dangling. The master MUST be
+   *        constructed via `std::make_shared<MyMaster>(...)` for the
+   *        weak_ptr to be valid — see VDA5050Master class
+   *        doc-comment.
    */
   AGV(
+    std::shared_ptr<vda5050_execution::ProtocolAdapter> protocol_adapter,
     const std::string& manufacturer, const std::string& serial_number,
-    const std::string& broker_address, size_t max_queue_size = 10,
-    bool drop_oldest = true,
-    int state_heartbeat_interval = StateHeartbeatInterval);
+    size_t max_queue_size = 10, bool drop_oldest = true,
+    int state_heartbeat_interval = StateHeartbeatInterval,
+    std::weak_ptr<VDA5050Master> parent = {});
 
   /**
    * @brief Destructor - stops the queue processing thread
@@ -306,7 +325,63 @@ public:
    */
   void handle_visualization(const vda5050_types::Visualization& msg);
 
+  // ============================================================================
+  // Subscription Management
+  // ============================================================================
+
+  /**
+   * @brief Wire per-topic subscriptions on the protocol adapter.
+   *
+   * Must be called by the caller of the constructor after
+   * `make_shared<AGV>(...)` returns — the wrapper lambda captures
+   * `weak_from_this()`, which is only valid once the shared_ptr
+   * ownership has been associated. Calling from inside the
+   * constructor would silently install wrappers with empty
+   * weak_ptrs, and user callbacks would never fire.
+   */
+  void setup_subscriptions();
+
 private:
+  // Wire a typed subscription on protocol_adapter_. The wrapper
+  // captures weak_from_this() so the lambda no-ops cleanly if AGV
+  // is destroyed before the wrapper fires (instead of dereferencing
+  // a dangling pointer). Lock at the top keeps AGV alive for the
+  // entire dispatch — both `self->agv_id_` and `handler(msg)`
+  // (which captures [this]) are safe inside the locked scope.
+  // Logs parse errors at ERROR level and exceptions thrown by
+  // `handler` at WARN level without re-throwing — both are
+  // non-fatal for the AGV.
+  template <typename MsgType>
+  void create_subscription(
+    std::function<void(const MsgType&)> handler, QosLevel qos)
+  {
+    protocol_adapter_->template subscribe<MsgType>(
+      [self_weak = weak_from_this(), handler = std::move(handler)](
+        MsgType msg, std::optional<vda5050_types::Error> error) {
+        auto self = self_weak.lock();
+        if (!self) return;  // AGV gone — drop the message silently
+
+        if (error.has_value())
+        {
+          VDA5050_ERROR(
+            "[AGV] Failed to parse message for {}: {}", self->agv_id_,
+            error->error_description.value_or("unknown error"));
+          return;
+        }
+        try
+        {
+          handler(msg);
+        }
+        catch (const std::exception& e)
+        {
+          VDA5050_WARN(
+            "[AGV] Failed to handle message for {}: {}", self->agv_id_,
+            e.what());
+        }
+      },
+      static_cast<int>(qos));
+  }
+
   // ============================================================================
   // Internal State Management
   // ============================================================================
@@ -328,9 +403,6 @@ private:
   void process_queues();
 
   // Publishing
-  void publish_message(
-    const std::string& topic, const std::string& payload, int qos,
-    const std::string& label);
   void publish_order(const vda5050_types::Order& order);
   void publish_instant_actions(const vda5050_types::InstantActions& actions);
 
@@ -346,9 +418,15 @@ private:
   std::string serial_number_;
   std::string agv_id_;
 
-  // MQTT client for publishing outgoing messages
-  std::string broker_address_;
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
+  // Protocol Adapter for publishing/subscribing
+  std::shared_ptr<vda5050_execution::ProtocolAdapter> protocol_adapter_;
+
+  // Non-owning back-pointer to the owning VDA5050Master.
+  // Set at construction and never reassigned — safe to read concurrently
+  // from MQTT-callback thread inside handle_*() dispatch.
+  // Stored as weak_ptr so dispatch sites can detect master destruction
+  // cleanly via lock() rather than silently dangling.
+  std::weak_ptr<VDA5050Master> parent_;
 
   // Heartbeat listener for state timeout detection (protected by heartbeat_mutex_)
   mutable std::mutex heartbeat_mutex_;

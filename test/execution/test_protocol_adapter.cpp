@@ -180,6 +180,51 @@ TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
   EXPECT_TRUE(success);
 }
 
+TYPED_TEST(ProtocolAdapterTest, UnsubscribeMessage)
+{
+  MqttClientInterface::MessageHandler captured_handler;
+
+  EXPECT_CALL(
+    *this->mock_,
+    subscribe(testing::StartsWith(this->topic_prefix_), testing::_, this->qos_))
+    .WillOnce(testing::SaveArg<1>(&captured_handler));
+
+  std::atomic_bool callback_invoked = false;
+  this->adapter_->template subscribe<TypeParam>(
+    [&](TypeParam /*msg*/, std::optional<vda5050_types::Error> err) {
+      if (!err.has_value()) callback_invoked = true;
+    },
+    this->qos_);
+
+  // While subscribed, the captured wrapper should dispatch to the
+  // user callback.
+  TypeParam msg = make_valid_message<TypeParam>();
+  nlohmann::json j = msg;
+  captured_handler(this->topic_prefix_, j.dump());
+  EXPECT_TRUE(callback_invoked);
+
+  // Unsubscribe.
+  EXPECT_CALL(
+    *this->mock_, unsubscribe(testing::StartsWith(this->topic_prefix_)))
+    .Times(1);
+  this->adapter_->template unsubscribe<TypeParam>();
+
+  // Invoking the captured wrapper after unsubscribe should NOT
+  // dispatch — the wrapper is now inert.
+  callback_invoked = false;
+  captured_handler(this->topic_prefix_, j.dump());
+  EXPECT_FALSE(callback_invoked);
+}
+
+TYPED_TEST(ProtocolAdapterTest, UnsubscribeWithoutSubscription)
+{
+  EXPECT_CALL(
+    *this->mock_, unsubscribe(testing::StartsWith(this->topic_prefix_)))
+    .Times(1);
+
+  this->adapter_->template unsubscribe<TypeParam>();
+}
+
 TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
 {
   TypeParam msg = make_valid_message<TypeParam>();

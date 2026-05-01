@@ -21,9 +21,11 @@
 
 #include <fmt/core.h>
 
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -137,8 +139,26 @@ public:
     auto it = topic_names_.find(type_idx);
     if (it == topic_names_.end()) return;
 
-    auto wrapper = [callback](
+    // Per-subscription "active" flag captured by the wrapper so any
+    // in-flight or post-unsubscribe dispatch becomes a no-op at the
+    // adapter layer. Stored in active_flags_ so unsubscribe<T>() can
+    // flip it. If a previous subscribe<T>() is still active for this
+    // type, deactivate it (newer wins).
+    auto active = std::make_shared<std::atomic<bool>>(true);
+    {
+      std::lock_guard<std::mutex> lock(active_flags_mutex_);
+      auto prev = active_flags_.find(type_idx);
+      if (prev != active_flags_.end())
+      {
+        *(prev->second) = false;
+      }
+      active_flags_[type_idx] = active;
+    }
+
+    auto wrapper = [callback, active](
                      const std::string& topic, const std::string& payload) {
+      if (!*active) return;
+
       try
       {
         MessageT message = nlohmann::json::parse(payload);
@@ -165,6 +185,32 @@ public:
     if (mqtt_client_) mqtt_client_->subscribe(it->second, wrapper, qos);
   }
 
+  template <typename MessageT>
+  void unsubscribe()
+  {
+    static_assert(
+      is_valid_message_v<MessageT>, "Type is not supported in ProtocolAdapter");
+
+    auto type_idx = std::type_index(typeid(MessageT));
+
+    // Deactivate the wrapper's flag so any in-flight or
+    // post-unsubscribe dispatch becomes a no-op at the adapter layer.
+    {
+      std::lock_guard<std::mutex> lock(active_flags_mutex_);
+      auto flag = active_flags_.find(type_idx);
+      if (flag != active_flags_.end())
+      {
+        *(flag->second) = false;
+        active_flags_.erase(flag);
+      }
+    }
+
+    auto it = topic_names_.find(type_idx);
+    if (it == topic_names_.end()) return;
+
+    if (mqtt_client_) mqtt_client_->unsubscribe(it->second);
+  }
+
 private:
   ProtocolAdapter(
     std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
@@ -175,6 +221,16 @@ private:
 
   std::unordered_map<std::type_index, std::string> topic_names_;
   std::unordered_map<std::type_index, uint32_t> header_ids_;
+
+  // Per-type "active" flags. Captured by the wrapper installed on
+  // mqtt_client; the wrapper checks the flag before dispatching to
+  // the user callback. unsubscribe<T>() flips the flag to false so
+  // any in-flight or post-unsubscribe messages are silently dropped
+  // at the adapter — the user callback won't fire after
+  // unsubscribe<T>() returns.
+  std::unordered_map<std::type_index, std::shared_ptr<std::atomic<bool>>>
+    active_flags_;
+  std::mutex active_flags_mutex_;
 
   std::string interface_;
   std::string version_;
