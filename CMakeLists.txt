@@ -118,6 +118,24 @@ target_include_directories(transport
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+# Master
+file(GLOB_RECURSE master_srcs "src/master/*.cpp")
+add_library(master ${master_srcs})
+add_library(${PROJECT_NAME}::master ALIAS master)
+target_link_libraries(master
+  PUBLIC
+    types
+    json_utils
+    transport
+    execution
+)
+target_include_directories(transport
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+
 set(lib_targets
   types
   json_utils
@@ -126,6 +144,7 @@ set(lib_targets
   order_utils
   transport
   execution
+  master
 )
 
 install(
@@ -197,6 +216,15 @@ if(BUILD_TESTING)
       test/execution/test_provider.cpp
     )
     target_link_libraries(test_execution vda5050_core::execution)
+
+    ament_add_gmock(test_master
+      test/master/test_integration_heartbeat.cpp
+      test/master/test_integration_master_logic.cpp
+      test/master/test_integration_master_mqtt.cpp
+      test/master/test_integration_master_teardown.cpp
+      test/master/test_unit_agv.cpp
+    )
+    target_link_libraries(test_master vda5050_core::master)
   else()
     enable_testing()
 
@@ -206,7 +234,7 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
     include(GoogleTest)
 
-    add_executable(test_order_utils test/order_utils/unit_order_graph_validator.cpp)
+    add_executable(test_order_utils test/order_utils/test_unit_order_graph_validator.cpp)
     target_link_libraries(test_order_utils
       GTest::gtest_main
       ${PROJECT_NAME}::order_utils
@@ -219,8 +247,8 @@ if(BUILD_TESTING)
     )
 
     add_executable(test_logger
-      test/logger/unit_logger.cpp
-      test/logger/unit_default_logger.cpp
+      test/logger/test_unit_logger.cpp
+      test/logger/test_unit_default_logger.cpp
     )
     target_link_libraries(test_logger
       GTest::gtest_main
@@ -228,8 +256,8 @@ if(BUILD_TESTING)
     )
 
     add_executable(test_transport
-      test/transport/unit_mqtt_client_interface.cpp
-      test/transport/integration_paho_mqtt_client.cpp
+      test/transport/test_unit_mqtt_client_interface.cpp
+      test/transport/test_integration_paho_mqtt_client.cpp
     )
     target_link_libraries(test_transport
       GTest::gmock_main
@@ -248,12 +276,25 @@ if(BUILD_TESTING)
       ${PROJECT_NAME}::execution
     )
 
+    add_executable(test_master
+      test/master/test_integration_heartbeat.cpp
+      test/master/test_integration_master_logic.cpp
+      test/master/test_integration_master_mqtt.cpp
+      test/master/test_integration_master_teardown.cpp
+      test/master/test_unit_agv.cpp
+    )
+    target_link_libraries(test_master
+      GTest::gmock_main
+      ${PROJECT_NAME}::master
+    )
+
     set(test_execs
       test_order_utils
       test_json_utils
       test_logger
       test_transport
       test_execution
+      test_master
     )
     foreach(exec ${test_execs})
       gtest_discover_tests(${exec})
