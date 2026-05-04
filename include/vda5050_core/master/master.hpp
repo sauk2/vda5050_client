@@ -92,7 +92,7 @@ public:
    * master->connect();
    * @endcode
    */
-  VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client);
+  explicit VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client);
 
   /**
    * @brief Virtual destructor - disconnects MQTT client
