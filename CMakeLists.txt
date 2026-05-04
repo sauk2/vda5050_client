@@ -193,18 +193,18 @@ if(BUILD_TESTING)
     target_link_libraries(test_json_utils vda5050_core::json_utils)
 
     ament_add_gmock(test_order_utils
-      test/order_utils/unit_order_graph_validator.cpp)
+      test/order_utils/test_unit_order_graph_validator.cpp)
     target_link_libraries(test_order_utils vda5050_core::order_utils)
 
     ament_add_gmock(test_logger
-      test/logger/unit_default_logger.cpp
-      test/logger/unit_logger.cpp
+      test/logger/test_unit_default_logger.cpp
+      test/logger/test_unit_logger.cpp
     )
     target_link_libraries(test_logger vda5050_core::logger)
 
     ament_add_gmock(test_transport
-      test/transport/unit_mqtt_client_interface.cpp
-      test/transport/integration_paho_mqtt_client.cpp
+      test/transport/test_unit_mqtt_client_interface.cpp
+      test/transport/test_integration_paho_mqtt_client.cpp
     )
     target_link_libraries(test_transport vda5050_core::transport)
 
