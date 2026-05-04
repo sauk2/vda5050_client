@@ -16,31 +16,19 @@
  * limitations under the License.
  */
 
-/**
- * @file teardown_test.cpp
- * @brief Integration tests for the per-AGV teardown unsubscribe chain.
- *
- * Verifies that AGV destruction (via offboard_agv() or master
- * destruction) propagates through ProtocolAdapter::unsubscribe<T>() and
- * lands as MqttClientInterface::unsubscribe(topic) calls — once per
- * subscribed topic.
- *
- * Uses a gmock MockMqttClient so the test runs without a real broker
- * and can assert on the exact topic strings.
- */
-
 #include <gmock/gmock.h>
 
 #include <functional>
 #include <memory>
 #include <string>
 
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
-#include "vda5050_master/vda5050_master/master.hpp"
+#include "vda5050_core/master/master.hpp"
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
 
-namespace vda5050_master::test {
+using vda5050_core::master::VDA5050Master;
+using vda5050_core::transport::MqttClientInterface;
 
-class MockMqttClient : public vda5050_core::mqtt_client::MqttClientInterface
+class MockMqttClient : public MqttClientInterface
 {
 public:
   MOCK_METHOD(void, connect, (), (override));
@@ -135,5 +123,3 @@ TEST_F(MasterTeardownTest, MultipleAgvsAllUnsubscribeOnOffboard)
   master->offboard_agv("mfg1", "001");
   master->offboard_agv("mfg2", "002");
 }
-
-}  // namespace vda5050_master::test

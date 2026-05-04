@@ -30,30 +30,16 @@
 #include <string>
 #include <thread>
 
-#include "../communication/mqtt/test_helpers.hpp"
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
-#include "vda5050_master/vda5050_master/master.hpp"
+#include "vda5050_core/master/master.hpp"
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
 
-using vda5050_master::test::mqtt::constants::is_broker_available;
-using vda5050_master::test::mqtt::constants::MQTT_BROKER;
-
-namespace vda5050_master::test {
-
-// =============================================================================
-// Test Fixture for MQTT Tests
-// =============================================================================
+using vda5050_core::master::VDA5050Master;
 
 class MasterMqttTestFixture : public ::testing::Test
 {
 protected:
   void SetUp() override
   {
-    if (!is_broker_available())
-    {
-      GTEST_SKIP() << "MQTT broker at " << MQTT_BROKER
-                   << " is not available. Skipping test.";
-    }
-
     manufacturer_ = "TestManufacturer";
     serial_number_ = "SN001";
   }
@@ -66,21 +52,15 @@ protected:
 
   std::shared_ptr<VDA5050Master> create_master()
   {
-    auto client = vda5050_core::mqtt_client::create_default_client(
-      MQTT_BROKER, "master_mqtt_test_" + std::to_string(test_id_++));
+    std::string broker = "tcp://localhost:1883";
+    auto client = vda5050_core::transport::create_default_client(
+      broker, "master_mqtt_test");
     return std::make_shared<VDA5050Master>(client);
   }
 
   std::string manufacturer_;
   std::string serial_number_;
-  static int test_id_;
 };
-
-int MasterMqttTestFixture::test_id_ = 0;
-
-// =============================================================================
-// Connection Management Tests
-// =============================================================================
 
 TEST_F(MasterMqttTestFixture, ConnectToMqttBroker)
 {
@@ -193,5 +173,3 @@ TEST_F(MasterMqttTestFixture, AGVsPersistedAcrossReconnect)
 
   master->disconnect();
 }
-
-}  // namespace vda5050_master::test
