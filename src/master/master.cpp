@@ -16,31 +16,25 @@
  * limitations under the License.
  */
 
-#include "vda5050_master/vda5050_master/master.hpp"
-
-#include <sstream>
 #include <utility>
-#include <vector>
 
-#include "nlohmann/json.hpp"
 #include "vda5050_core/logger/logger.hpp"
-#include "vda5050_execution/protocol_adapter.hpp"
-#include "vda5050_json_utils/serialization.hpp"
-#include "vda5050_master/standard_names.hpp"
 
-namespace vda5050_master {
+#include "vda5050_core/master/master.hpp"
+#include "vda5050_core/master/standard_names.hpp"
 
-// ============================================================================
-// Constructor / Destructor
-// ============================================================================
+namespace vda5050_core {
 
-VDA5050Master::VDA5050Master(
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client)
+namespace master {
+
+//=============================================================================
+VDA5050Master::VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client)
 : mqtt_client_(std::move(mqtt_client))
 {
   VDA5050_INFO("[VDA5050Master] Created VDA5050Master instance");
 }
 
+//=============================================================================
 VDA5050Master::~VDA5050Master()
 {
   VDA5050_INFO("[VDA5050Master] Destroying VDA5050Master instance");
@@ -48,10 +42,7 @@ VDA5050Master::~VDA5050Master()
   VDA5050_INFO("[VDA5050Master] VDA5050Master instance destroyed");
 }
 
-// ============================================================================
-// Connection Management
-// ============================================================================
-
+//=============================================================================
 void VDA5050Master::connect()
 {
   if (!mqtt_client_)
@@ -70,6 +61,7 @@ void VDA5050Master::connect()
   mqtt_client_->connect();
 }
 
+//=============================================================================
 void VDA5050Master::disconnect()
 {
   if (!mqtt_client_)
@@ -87,15 +79,13 @@ void VDA5050Master::disconnect()
   VDA5050_INFO("[VDA5050Master] Disconnected");
 }
 
+//=============================================================================
 bool VDA5050Master::is_connected() const
 {
   return mqtt_client_ && mqtt_client_->connected();
 }
 
-// ============================================================================
-// AGV Onboarding/Offboarding
-// ============================================================================
-
+//=============================================================================
 void VDA5050Master::onboard_agv(
   const std::string& manufacturer, const std::string& serial_number,
   size_t max_queue_size, bool drop_oldest)
@@ -115,7 +105,7 @@ void VDA5050Master::onboard_agv(
   // master's virtual callbacks (on_state, on_connection, etc.) while
   // detecting master destruction cleanly via lock().
   auto agv = std::make_shared<AGV>(
-    vda5050_execution::ProtocolAdapter::make(
+    ProtocolAdapter::make(
       mqtt_client_, InterfaceName, Version, manufacturer, serial_number),
     manufacturer, serial_number, max_queue_size, drop_oldest,
     StateHeartbeatInterval, weak_from_this());
@@ -130,6 +120,7 @@ void VDA5050Master::onboard_agv(
   VDA5050_INFO("[VDA5050Master] Onboarded AGV: {}", agv_id);
 }
 
+//=============================================================================
 void VDA5050Master::offboard_agv(
   const std::string& manufacturer, const std::string& serial_number)
 {
@@ -158,6 +149,7 @@ void VDA5050Master::offboard_agv(
   VDA5050_INFO("[VDA5050Master] Offboarded AGV: {}", agv_id);
 }
 
+//=============================================================================
 bool VDA5050Master::is_agv_onboarded(
   const std::string& manufacturer, const std::string& serial_number) const
 {
@@ -166,10 +158,7 @@ bool VDA5050Master::is_agv_onboarded(
   return get_agv_by_id(agv_id) != nullptr;
 }
 
-// ============================================================================
-// AGV Access
-// ============================================================================
-
+//=============================================================================
 std::shared_ptr<AGV> VDA5050Master::get_agv(
   const std::string& manufacturer, const std::string& serial_number) const
 {
@@ -178,6 +167,7 @@ std::shared_ptr<AGV> VDA5050Master::get_agv(
   return get_agv_by_id(agv_id);
 }
 
+//=============================================================================
 std::shared_ptr<AGV> VDA5050Master::get_agv_by_id(
   const std::string& agv_id) const
 {
@@ -186,13 +176,10 @@ std::shared_ptr<AGV> VDA5050Master::get_agv_by_id(
   return (it != agvs_.end()) ? it->second : nullptr;
 }
 
-// ============================================================================
-// Outgoing Messages
-// ============================================================================
-
+//=============================================================================
 bool VDA5050Master::publish_order(
   const std::string& manufacturer, const std::string& serial_number,
-  const vda5050_types::Order& order)
+  const Order& order)
 {
   std::string agv_id = manufacturer + "/" + serial_number;
 
@@ -211,9 +198,10 @@ bool VDA5050Master::publish_order(
   return agv->send_order(order);
 }
 
+//=============================================================================
 bool VDA5050Master::publish_instant_actions(
   const std::string& manufacturer, const std::string& serial_number,
-  const vda5050_types::InstantActions& actions)
+  const InstantActions& actions)
 {
   std::string agv_id = manufacturer + "/" + serial_number;
 
@@ -232,34 +220,33 @@ bool VDA5050Master::publish_instant_actions(
   return agv->send_instant_actions(actions);
 }
 
-// ============================================================================
-// User-Extension Callbacks — default empty implementations
-// ============================================================================
-//
-// Override these in a subclass to react to incoming AGV messages.
-// Default implementations are empty so a master that doesn't subclass
-// still works silently.
-
+//=============================================================================
 void VDA5050Master::on_state(
-  const std::string& /*agv_id*/, const vda5050_types::State& /*state*/)
+  const std::string& /*agv_id*/, const State& /*state*/)
 {
+  // TODO
 }
 
+//=============================================================================
 void VDA5050Master::on_connection(
-  const std::string& /*agv_id*/,
-  const vda5050_types::Connection& /*connection*/)
+  const std::string& /*agv_id*/, const Connection& /*connection*/)
 {
+  // TODO
 }
 
+//=============================================================================
 void VDA5050Master::on_factsheet(
-  const std::string& /*agv_id*/, const vda5050_types::Factsheet& /*factsheet*/)
+  const std::string& /*agv_id*/, const Factsheet& /*factsheet*/)
 {
+  // TODO
 }
 
+//=============================================================================
 void VDA5050Master::on_visualization(
-  const std::string& /*agv_id*/,
-  const vda5050_types::Visualization& /*visualization*/)
+  const std::string& /*agv_id*/, const Visualization& /*visualization*/)
 {
+  // TODO
 }
 
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core

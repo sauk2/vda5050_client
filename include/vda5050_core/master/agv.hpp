@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_MASTER__AGV__AGV_HPP_
-#define VDA5050_MASTER__AGV__AGV_HPP_
+#ifndef VDA5050_CORE__MASTER__AGV_HPP_
+#define VDA5050_CORE__MASTER__AGV_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -31,14 +31,35 @@
 #include <thread>
 #include <utility>
 
-#include "vda5050_core/logger/logger.hpp"
-#include "vda5050_execution/protocol_adapter.hpp"
-#include "vda5050_master/communication/heartbeat.hpp"
-#include "vda5050_master/standard_names.hpp"
-#include "vda5050_master/vda5050_interfaces.hpp"
-#include "vda5050_types/error.hpp"
+#include "vda5050_core/types/connection.hpp"
+#include "vda5050_core/types/connection_state.hpp"
+#include "vda5050_core/types/error.hpp"
+#include "vda5050_core/types/factsheet.hpp"
+#include "vda5050_core/types/instant_actions.hpp"
+#include "vda5050_core/types/order.hpp"
+#include "vda5050_core/types/state.hpp"
+#include "vda5050_core/types/visualization.hpp"
 
-namespace vda5050_master {
+#include "vda5050_core/execution/protocol_adapter.hpp"
+#include "vda5050_core/logger/logger.hpp"
+
+#include "vda5050_core/master/heartbeat.hpp"
+#include "vda5050_core/master/standard_names.hpp"
+
+using vda5050_core::types::Connection;
+using vda5050_core::types::ConnectionState;
+using vda5050_core::types::Error;
+using vda5050_core::types::Factsheet;
+using vda5050_core::types::InstantActions;
+using vda5050_core::types::Order;
+using vda5050_core::types::State;
+using vda5050_core::types::Visualization;
+
+using vda5050_core::execution::ProtocolAdapter;
+
+namespace vda5050_core {
+
+namespace master {
 
 // Forward declaration
 class VDA5050Master;
@@ -101,7 +122,7 @@ public:
    *        doc-comment.
    */
   AGV(
-    std::shared_ptr<vda5050_execution::ProtocolAdapter> protocol_adapter,
+    std::shared_ptr<execution::ProtocolAdapter> protocol_adapter,
     const std::string& manufacturer, const std::string& serial_number,
     size_t max_queue_size = 10, bool drop_oldest = true,
     int state_heartbeat_interval = StateHeartbeatInterval,
@@ -160,7 +181,7 @@ public:
    * @brief Get the AGV connection state (based on VDA5050 connection message)
    * @return ONLINE, OFFLINE, or CONNECTIONBROKEN
    */
-  vda5050_types::ConnectionState get_connection_status() const;
+  ConnectionState get_connection_status() const;
 
   /**
    * @brief Get the AGV operational state (based on state heartbeat)
@@ -211,25 +232,25 @@ public:
    * @brief Get the last received connection message
    * @return Optional containing the message if received, nullopt otherwise
    */
-  std::optional<vda5050_types::Connection> get_last_connection() const;
+  std::optional<Connection> get_last_connection() const;
 
   /**
    * @brief Get the last received state message
    * @return Optional containing the message if received, nullopt otherwise
    */
-  std::optional<vda5050_types::State> get_last_state() const;
+  std::optional<State> get_last_state() const;
 
   /**
    * @brief Get the last received factsheet message
    * @return Optional containing the message if received, nullopt otherwise
    */
-  std::optional<vda5050_types::Factsheet> get_last_factsheet() const;
+  std::optional<Factsheet> get_last_factsheet() const;
 
   /**
    * @brief Get the last received visualization message
    * @return Optional containing the message if received, nullopt otherwise
    */
-  std::optional<vda5050_types::Visualization> get_last_visualization() const;
+  std::optional<Visualization> get_last_visualization() const;
 
   // ============================================================================
   // Timestamps
@@ -276,14 +297,14 @@ public:
    * @param order The order message
    * @return true if queued successfully, false if queue is full (drop_oldest=false)
    */
-  bool send_order(const vda5050_types::Order& order);
+  bool send_order(const Order& order);
 
   /**
    * @brief Queue instant actions to be sent to this AGV
    * @param actions The instant actions message
    * @return true if queued successfully, false if queue is full (drop_oldest=false)
    */
-  bool send_instant_actions(const vda5050_types::InstantActions& actions);
+  bool send_instant_actions(const InstantActions& actions);
 
   /**
    * @brief Get the number of pending orders in the queue
@@ -305,25 +326,25 @@ public:
    * @brief Handle an incoming connection message
    * @param msg The parsed connection message
    */
-  void handle_connection(const vda5050_types::Connection& msg);
+  void handle_connection(const Connection& msg);
 
   /**
    * @brief Handle an incoming state message
    * @param msg The parsed state message
    */
-  void handle_state(const vda5050_types::State& msg);
+  void handle_state(const State& msg);
 
   /**
    * @brief Handle an incoming factsheet message
    * @param msg The parsed factsheet message
    */
-  void handle_factsheet(const vda5050_types::Factsheet& msg);
+  void handle_factsheet(const Factsheet& msg);
 
   /**
    * @brief Handle an incoming visualization message
    * @param msg The parsed visualization message
    */
-  void handle_visualization(const vda5050_types::Visualization& msg);
+  void handle_visualization(const Visualization& msg);
 
   // ============================================================================
   // Subscription Management
@@ -357,7 +378,7 @@ private:
   {
     protocol_adapter_->template subscribe<MsgType>(
       [self_weak = weak_from_this(), handler = std::move(handler)](
-        MsgType msg, std::optional<vda5050_types::Error> error) {
+        MsgType msg, std::optional<Error> error) {
         auto self = self_weak.lock();
         if (!self) return;  // AGV gone — drop the message silently
 
@@ -386,7 +407,7 @@ private:
   // Internal State Management
   // ============================================================================
 
-  void set_connection_status(vda5050_types::ConnectionState status);
+  void set_connection_status(ConnectionState status);
   void set_operational_state(AGVState state);
   void on_state_heartbeat_timeout();
 
@@ -403,8 +424,8 @@ private:
   void process_queues();
 
   // Publishing
-  void publish_order(const vda5050_types::Order& order);
-  void publish_instant_actions(const vda5050_types::InstantActions& actions);
+  void publish_order(const Order& order);
+  void publish_instant_actions(const InstantActions& actions);
 
   // Helper to build topic paths
   std::string build_topic(const std::string& topic_name) const;
@@ -419,7 +440,7 @@ private:
   std::string agv_id_;
 
   // Protocol Adapter for publishing/subscribing
-  std::shared_ptr<vda5050_execution::ProtocolAdapter> protocol_adapter_;
+  std::shared_ptr<ProtocolAdapter> protocol_adapter_;
 
   // Non-owning back-pointer to the owning VDA5050Master.
   // Set at construction and never reassigned — safe to read concurrently
@@ -430,13 +451,12 @@ private:
 
   // Heartbeat listener for state timeout detection (protected by heartbeat_mutex_)
   mutable std::mutex heartbeat_mutex_;
-  std::unique_ptr<communication::HeartbeatListener> state_heartbeat_;
+  std::unique_ptr<HeartbeatListener> state_heartbeat_;
   int state_heartbeat_interval_;
 
   // AGV states (protected by state_mutex_)
   mutable std::mutex state_mutex_;
-  vda5050_types::ConnectionState connection_status_{
-    vda5050_types::ConnectionState::OFFLINE};
+  ConnectionState connection_status_{ConnectionState::OFFLINE};
   AGVState operational_state_{AGVState::STATE_UNKNOWN};
 
   // Timestamps
@@ -445,16 +465,16 @@ private:
   // Cached messages and timestamps (protected by data_mutex_)
   mutable std::mutex data_mutex_;
 
-  std::optional<vda5050_types::Connection> last_connection_;
+  std::optional<Connection> last_connection_;
   std::optional<TimePoint> last_connection_time_;
 
-  std::optional<vda5050_types::State> last_state_;
+  std::optional<State> last_state_;
   std::optional<TimePoint> last_state_time_;
 
-  std::optional<vda5050_types::Factsheet> last_factsheet_;
+  std::optional<Factsheet> last_factsheet_;
   std::optional<TimePoint> last_factsheet_time_;
 
-  std::optional<vda5050_types::Visualization> last_visualization_;
+  std::optional<Visualization> last_visualization_;
   std::optional<TimePoint> last_visualization_time_;
 
   // Outgoing message queues (protected by queue_mutex_)
@@ -463,8 +483,8 @@ private:
 
   mutable std::mutex queue_mutex_;
   std::condition_variable queue_cv_;
-  std::queue<vda5050_types::Order> order_queue_;
-  std::queue<vda5050_types::InstantActions> instant_actions_queue_;
+  std::queue<Order> order_queue_;
+  std::queue<InstantActions> instant_actions_queue_;
 
   // Queue processing thread
   std::mutex thread_mutex_;
@@ -473,6 +493,7 @@ private:
   std::thread queue_thread_;
 };
 
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core
 
-#endif  // VDA5050_MASTER__AGV__AGV_HPP_
+#endif  // VDA5050_CORE__MASTER__AGV_HPP_

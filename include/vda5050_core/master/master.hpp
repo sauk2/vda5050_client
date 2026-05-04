@@ -16,21 +16,37 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_MASTER__VDA5050_MASTER__MASTER_HPP_
-#define VDA5050_MASTER__VDA5050_MASTER__MASTER_HPP_
+#ifndef VDA5050_CORE__MASTER__MASTER_HPP_
+#define VDA5050_CORE__MASTER__MASTER_HPP_
 
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
-#include <utility>
 
-#include "vda5050_core/mqtt_client/mqtt_client_interface.hpp"
-#include "vda5050_master/agv/agv.hpp"
-#include "vda5050_master/vda5050_interfaces.hpp"
+#include "vda5050_core/types/connection.hpp"
+#include "vda5050_core/types/factsheet.hpp"
+#include "vda5050_core/types/instant_actions.hpp"
+#include "vda5050_core/types/order.hpp"
+#include "vda5050_core/types/state.hpp"
+#include "vda5050_core/types/visualization.hpp"
 
-namespace vda5050_master {
+#include "vda5050_core/transport/mqtt_client_interface.hpp"
+
+#include "vda5050_core/master/agv.hpp"
+
+using vda5050_core::types::Connection;
+using vda5050_core::types::Factsheet;
+using vda5050_core::types::InstantActions;
+using vda5050_core::types::Order;
+using vda5050_core::types::State;
+using vda5050_core::types::Visualization;
+
+using vda5050_core::transport::MqttClientInterface;
+
+namespace vda5050_core {
+
+namespace master {
 
 /**
  * @brief VDA5050 Master for multi-AGV fleet management
@@ -76,8 +92,7 @@ public:
    * master->connect();
    * @endcode
    */
-  VDA5050Master(std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface>
-                  mqtt_client);
+  VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client);
 
   /**
    * @brief Virtual destructor - disconnects MQTT client
@@ -174,7 +189,7 @@ public:
    */
   bool publish_order(
     const std::string& manufacturer, const std::string& serial_number,
-    const vda5050_types::Order& order);
+    const Order& order);
 
   /**
    * @brief Publish instant actions to a specific AGV
@@ -186,7 +201,7 @@ public:
    */
   bool publish_instant_actions(
     const std::string& manufacturer, const std::string& serial_number,
-    const vda5050_types::InstantActions& actions);
+    const InstantActions& actions);
 
   // ============================================================================
   // User-Extension Callbacks (override in subclass)
@@ -207,27 +222,25 @@ public:
    * @param agv_id  manufacturer/serial composite ID
    * @param state   the parsed State message
    */
-  virtual void on_state(
-    const std::string& agv_id, const vda5050_types::State& state);
+  virtual void on_state(const std::string& agv_id, const State& state);
 
   /**
    * @brief Called after a Connection message arrives and is cached.
    */
   virtual void on_connection(
-    const std::string& agv_id, const vda5050_types::Connection& connection);
+    const std::string& agv_id, const Connection& connection);
 
   /**
    * @brief Called after a Factsheet message arrives and is cached.
    */
   virtual void on_factsheet(
-    const std::string& agv_id, const vda5050_types::Factsheet& factsheet);
+    const std::string& agv_id, const Factsheet& factsheet);
 
   /**
    * @brief Called after a Visualization message arrives and is cached.
    */
   virtual void on_visualization(
-    const std::string& agv_id,
-    const vda5050_types::Visualization& visualization);
+    const std::string& agv_id, const Visualization& visualization);
 
 private:
   // ============================================================================
@@ -241,13 +254,14 @@ private:
   // ============================================================================
 
   // Shared MQTT client for protocol adapters
-  std::shared_ptr<vda5050_core::mqtt_client::MqttClientInterface> mqtt_client_;
+  std::shared_ptr<MqttClientInterface> mqtt_client_;
 
   // Onboarded AGVs (shared_ptr allows safe access)
   mutable std::mutex agv_mutex_;
   std::unordered_map<std::string, std::shared_ptr<AGV>> agvs_;
 };
 
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core
 
-#endif  // VDA5050_MASTER__VDA5050_MASTER__MASTER_HPP_
+#endif  // VDA5050_CORE__MASTER__MASTER_HPP_

@@ -16,16 +16,18 @@
  * limitations under the License.
  */
 
-#include "vda5050_master/communication/heartbeat.hpp"
-
 #include <cmath>
 #include <utility>
 
 #include "vda5050_core/logger/logger.hpp"
 
-namespace vda5050_master {
-namespace communication {
+#include "vda5050_core/master/heartbeat.hpp"
 
+namespace vda5050_core {
+
+namespace master {
+
+//=============================================================================
 HeartbeatListener::HeartbeatListener(
   const std::string& id, const int heartbeat_interval,
   std::function<void()> disconnection_callback)
@@ -35,14 +37,17 @@ HeartbeatListener::HeartbeatListener(
   last_connection_report_(std::chrono::system_clock::now()),
   disconnection_callback_(std::move(disconnection_callback))
 {
+  // Nothing to do here ...
 }
 
+//=============================================================================
 HeartbeatListener::~HeartbeatListener()
 {
   stop_connection_heartbeat();
   VDA5050_INFO("[" + id_ + "] Deconstructing HeartbeatListener");
 }
 
+//=============================================================================
 void HeartbeatListener::start_connection_heartbeat()
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
@@ -58,6 +63,7 @@ void HeartbeatListener::start_connection_heartbeat()
   connection_thread_ = std::thread(&HeartbeatListener::listen, this);
 }
 
+//=============================================================================
 void HeartbeatListener::stop_connection_heartbeat()
 {
   std::thread conn_thread_to_join;
@@ -92,6 +98,7 @@ void HeartbeatListener::stop_connection_heartbeat()
   VDA5050_INFO("Stopped Connection heartbeat listener");
 }
 
+//=============================================================================
 void HeartbeatListener::received_connection()
 {
   // Check state with proper synchronization
@@ -106,6 +113,7 @@ void HeartbeatListener::received_connection()
   message_received_.notify_all();
 }
 
+//=============================================================================
 std::chrono::system_clock::time_point
 HeartbeatListener::get_last_connection_report()
 {
@@ -113,28 +121,33 @@ HeartbeatListener::get_last_connection_report()
   return last_connection_report_;
 }
 
+//=============================================================================
 HeartbeatState HeartbeatListener::get_state()
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
   return state_;
 }
 
+//=============================================================================
 std::chrono::system_clock::time_point HeartbeatListener::get_current_time()
 {
   return std::chrono::system_clock::now();
 }
 
+//=============================================================================
 int HeartbeatListener::get_check_interval()
 {
   return heartbeat_interval_;
 }
 
+//=============================================================================
 bool HeartbeatListener::is_stop_requested()
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
   return state_ == HeartbeatState::STOPPING;
 }
 
+//=============================================================================
 bool HeartbeatListener::is_timeout()
 {
   std::chrono::system_clock::time_point current_time = get_current_time();
@@ -158,6 +171,7 @@ bool HeartbeatListener::is_timeout()
   return false;
 }
 
+//=============================================================================
 void HeartbeatListener::listen()
 {
   while (!is_stop_requested())
@@ -182,5 +196,5 @@ void HeartbeatListener::listen()
   }
 }
 
-}  // namespace communication
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core

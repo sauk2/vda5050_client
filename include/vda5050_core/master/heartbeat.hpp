@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_MASTER__COMMUNICATION__HEARTBEAT_HPP_
-#define VDA5050_MASTER__COMMUNICATION__HEARTBEAT_HPP_
+#ifndef VDA5050_CORE__MASTER__HEARTBEAT_HPP_
+#define VDA5050_CORE__MASTER__HEARTBEAT_HPP_
 
 #include <chrono>
 #include <condition_variable>
@@ -25,10 +25,10 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "vda5050_core/logger/logger.hpp"
 
-namespace vda5050_master {
-namespace communication {
+namespace vda5050_core {
+
+namespace master {
 
 /**
  * @brief Heartbeat listener lifecycle states
@@ -125,7 +125,7 @@ private:
   std::function<void()> disconnection_callback_;
 };
 
-}  // namespace communication
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core
 
-#endif  // VDA5050_MASTER__COMMUNICATION__HEARTBEAT_HPP_
+#endif  // VDA5050_CORE__MASTER__HEARTBEAT_HPP_

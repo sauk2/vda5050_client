@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef VDA5050_MASTER__STANDARD_NAMES_HPP_
-#define VDA5050_MASTER__STANDARD_NAMES_HPP_
+#ifndef VDA5050_CORE__MASTER__STANDARD_NAMES_HPP_
+#define VDA5050_CORE__MASTER__STANDARD_NAMES_HPP_
 
 #include <string>
 
-namespace vda5050_master {
+namespace vda5050_core {
+
+namespace master {
 
 /// \brief MQTT QoS level — typed replacement for raw int values.
 ///
@@ -60,6 +62,7 @@ constexpr QosLevel InstantActionsQos = QosLevel::AtMostOnce;
 constexpr int ConnectionHeartbeatInterval = 15;  // seconds
 constexpr int StateHeartbeatInterval = 30;       // seconds
 
-}  // namespace vda5050_master
+}  // namespace master
+}  // namespace vda5050_core
 
-#endif  // VDA5050_MASTER__STANDARD_NAMES_HPP_
+#endif  // VDA5050_CORE__MASTER__STANDARD_NAMES_HPP_
