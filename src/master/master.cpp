@@ -224,28 +224,24 @@ bool VDA5050Master::publish_instant_actions(
 void VDA5050Master::on_state(
   const std::string& /*agv_id*/, const State& /*state*/)
 {
-  // TODO
 }
 
 //=============================================================================
 void VDA5050Master::on_connection(
   const std::string& /*agv_id*/, const Connection& /*connection*/)
 {
-  // TODO
 }
 
 //=============================================================================
 void VDA5050Master::on_factsheet(
   const std::string& /*agv_id*/, const Factsheet& /*factsheet*/)
 {
-  // TODO
 }
 
 //=============================================================================
 void VDA5050Master::on_visualization(
   const std::string& /*agv_id*/, const Visualization& /*visualization*/)
 {
-  // TODO
 }
 
 }  // namespace master
