@@ -12,97 +12,290 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(PahoMqttCpp REQUIRED)
 find_package(fmt REQUIRED)
-find_package(vda5050_types REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 include(GNUInstallDirs)
+include(cmake/vda5050_configure_target_alias.cmake)
 
-add_library(mqtt_client src/vda5050_core/mqtt_client/paho_mqtt_client.cpp)
-target_link_libraries(mqtt_client
-  PRIVATE
+# Types
+add_library(vda5050_types INTERFACE)
+vda5050_configure_target_alias(
+  TARGET vda5050_types
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME types
+)
+target_include_directories(vda5050_types
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# JSON Utils
+option(ENABLE_ROS2 "Enable ROS 2 message support in JSON utilities" OFF)
+if(ENABLE_ROS2)
+  message(STATUS "Building vda5050_json_utils with ROS 2 support")
+  find_package(vda5050_interfaces REQUIRED)
+else()
+  message(STATUS "Building vda5050_json_utils without ROS 2 support")
+endif()
+
+add_library(vda5050_json_utils INTERFACE)
+vda5050_configure_target_alias(
+  TARGET vda5050_json_utils
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME json_utils
+)
+target_link_libraries(vda5050_json_utils
+  INTERFACE
+    ${PROJECT_NAME}::types
+    nlohmann_json::nlohmann_json
+)
+target_include_directories(vda5050_json_utils
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+if(ENABLE_ROS2)
+  target_link_libraries(vda5050_json_utils
+    INTERFACE
+      ${vda5050_interfaces_LIBRARIES}
+  )
+  target_include_directories(vda5050_json_utils
+    INTERFACE
+      ${vda5050_interfaces_INCLUDE_DIRS}
+  )
+  target_compile_definitions(vda5050_json_utils INTERFACE ENABLE_ROS2)
+endif()
+
+# Logger
+add_library(vda5050_logger SHARED src/logger/logger.cpp)
+vda5050_configure_target_alias(
+  TARGET vda5050_logger
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME logger
+)
+target_link_libraries(vda5050_logger PUBLIC fmt::fmt)
+target_include_directories(vda5050_logger
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Errors
+add_library(vda5050_errors INTERFACE)
+vda5050_configure_target_alias(
+  TARGET vda5050_errors
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME errors
+)
+target_include_directories(vda5050_errors
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Order Utils
+add_library(vda5050_order_utils SHARED src/order_utils/order_graph_validator.cpp)
+vda5050_configure_target_alias(
+  TARGET vda5050_order_utils
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME order_utils
+)
+target_link_libraries(vda5050_order_utils PUBLIC
+  ${PROJECT_NAME}::types
+  ${PROJECT_NAME}::errors
+)
+target_include_directories(vda5050_order_utils
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Transport
+add_library(vda5050_transport SHARED src/transport/paho_mqtt_client.cpp)
+vda5050_configure_target_alias(
+  TARGET vda5050_transport
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME transport
+)
+target_link_libraries(vda5050_transport
+  PUBLIC
     PahoMqttCpp::paho-mqttpp3
+    ${PROJECT_NAME}::logger
 )
-target_include_directories(mqtt_client
+target_include_directories(vda5050_transport
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(logger src/vda5050_core/logger/logger.cpp)
-target_link_libraries(logger
-  PRIVATE
-    fmt::fmt
+# Execution
+file(GLOB_RECURSE execution_srcs "src/execution/*.cpp")
+add_library(vda5050_execution SHARED ${execution_srcs})
+vda5050_configure_target_alias(
+  TARGET vda5050_execution
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME execution
 )
-target_include_directories(logger
+target_link_libraries(vda5050_execution
+  PUBLIC
+    ${PROJECT_NAME}::types
+    ${PROJECT_NAME}::json_utils
+    ${PROJECT_NAME}::transport
+)
+target_include_directories(vda5050_execution
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(client
-  src/vda5050_core/client/state/state_manager.cpp
-  src/vda5050_core/client/order/order_graph_validator.cpp)
-target_link_libraries(client
-  vda5050_types::vda5050_types)
-target_include_directories(client
+# Master
+file(GLOB_RECURSE master_srcs "src/master/*.cpp")
+add_library(vda5050_master SHARED ${master_srcs})
+vda5050_configure_target_alias(
+  TARGET vda5050_master
+  NAMESPACE ${PROJECT_NAME}::
+  EXPORT_NAME master
+)
+target_link_libraries(vda5050_master
+  PUBLIC
+    ${PROJECT_NAME}::types
+    ${PROJECT_NAME}::json_utils
+    ${PROJECT_NAME}::transport
+    ${PROJECT_NAME}::execution
+)
+target_include_directories(vda5050_master
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(vda5050_core INTERFACE)
-target_link_libraries(vda5050_core
-  INTERFACE
-    mqtt_client
-    logger
-    client
-)
-target_include_directories(vda5050_core
-  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
 
 install(
-  DIRECTORY include/vda5050_core
-  DESTINATION include
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
 )
 
 install(
   TARGETS
-    mqtt_client
-    logger
-    client
-    vda5050_core
-  EXPORT export_vda5050_core
+    vda5050_types
+    vda5050_json_utils
+    vda5050_logger
+    vda5050_errors
+    vda5050_order_utils
+    vda5050_transport
+    vda5050_execution
+    vda5050_master
+  EXPORT export_${PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(
-  EXPORT export_vda5050_core
-  DESTINATION share/${PROJECT_NAME}/cmake
-  NAMESPACE vda5050_core::
+ament_export_targets(export_${PROJECT_NAME}
+  HAS_LIBRARY_TARGET
+  NAMESPACE ${PROJECT_NAME}::
 )
+ament_export_dependencies(PahoMqttCpp fmt nlohmann_json)
 
-ament_export_targets(export_vda5050_core HAS_LIBRARY_TARGET)
-ament_export_dependencies(PahoMqttCpp fmt vda5050_types)
-
-if(BUILD_TESTING)
-  include(../cmake/vda5050_lint_common.cmake)
-  vda5050_lint_common()
-
-  find_package(ament_cmake_gmock REQUIRED)
-  ament_add_gmock(test_mqtt_client
-    test/unit/mqtt_client/test_mqtt_client_interface.cpp
-    test/unit/logger/test_logger.cpp
-    test/unit/logger/test_default_logger.cpp
-    test/unit/order_graph_validator/test_order_graph_validator.cpp
-    test/unit/state_manager/test_state_manager.cpp
-    test/integration/mqtt_client/test_paho_mqtt_client.cpp
-  )
-  target_link_libraries(test_mqtt_client mqtt_client logger client)
+if(ENABLE_ROS2)
+  ament_export_dependencies(vda5050_interfaces)
 endif()
 
-ament_package()
+option(BUILD_EXAMPLES "Build examples" ON)
+
+if(BUILD_EXAMPLES)
+  add_executable(custom_base examples/custom_base.cpp)
+  target_link_libraries(custom_base PUBLIC
+    ${PROJECT_NAME}::execution
+    ${PROJECT_NAME}::logger
+  )
+
+  add_executable(provider_example examples/provider_example.cpp)
+  target_link_libraries(provider_example PUBLIC
+    ${PROJECT_NAME}::execution
+    ${PROJECT_NAME}::logger
+  )
+
+  add_executable(engine_example examples/engine_example.cpp)
+  target_link_libraries(engine_example PUBLIC
+    ${PROJECT_NAME}::execution
+    ${PROJECT_NAME}::logger
+  )
+
+  add_executable(handler_integration examples/handler_integration.cpp)
+  target_link_libraries(handler_integration PUBLIC
+    ${PROJECT_NAME}::execution
+    ${PROJECT_NAME}::logger
+  )
+
+  install(TARGETS
+      custom_base
+      provider_example
+      engine_example
+      handler_integration
+    DESTINATION lib/${PROJECT_NAME}
+  )
+endif()
+
+option(BUILD_TESTING "Build tests" ON)
+
+if(BUILD_TESTING)
+  include(cmake/vda5050_ament_lint_common.cmake)
+  vda5050_ament_lint_common()
+
+  find_package(ament_cmake_gmock REQUIRED)
+
+  set(json_tests test/json_utils/test_json_utils.cpp)
+  if(ENABLE_ROS2)
+    list(APPEND json_tests test/json_utils/test_json_utils_ros2.cpp)
+  endif()
+  ament_add_gmock(test_json_utils ${json_tests})
+  target_link_libraries(test_json_utils vda5050_core::json_utils)
+
+  ament_add_gmock(test_order_utils
+    test/order_utils/test_unit_order_graph_validator.cpp)
+  target_link_libraries(test_order_utils vda5050_core::order_utils)
+
+  ament_add_gmock(test_logger
+    test/logger/test_unit_default_logger.cpp
+    test/logger/test_unit_logger.cpp
+  )
+  target_link_libraries(test_logger vda5050_core::logger)
+
+  ament_add_gmock(test_transport
+    test/transport/test_unit_mqtt_client_interface.cpp
+    test/transport/test_integration_paho_mqtt_client.cpp
+  )
+  target_link_libraries(test_transport vda5050_core::transport)
+
+  ament_add_gmock(test_execution
+    test/execution/test_engine.cpp
+    test/execution/test_event_queue.cpp
+    test/execution/test_handler.cpp
+    test/execution/test_protocol_adapter.cpp
+    test/execution/test_provider.cpp
+  )
+  target_link_libraries(test_execution vda5050_core::execution)
+
+  ament_add_gmock(test_master
+    test/master/test_integration_heartbeat.cpp
+    test/master/test_integration_master_logic.cpp
+    test/master/test_integration_master_mqtt.cpp
+    test/master/test_integration_master_teardown.cpp
+    test/master/test_unit_agv.cpp
+  )
+  target_link_libraries(test_master vda5050_core::master)
+endif()
+
+# Install linter macro
+install(
+  FILES
+    cmake/vda5050_ament_lint_common.cmake
+  DESTINATION share/${PROJECT_NAME}/cmake
+)
+
+ament_package(
+  CONFIG_EXTRAS "vda5050_core-extras.cmake"
+)

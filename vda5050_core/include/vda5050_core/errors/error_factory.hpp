@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include <vda5050_types/error.hpp>
+#include <vda5050_core/types/error.hpp>
 
 namespace vda5050_core {
 
@@ -36,12 +36,13 @@ namespace errors {
 /// \param level Error level (Default: vda5050_types::ErrorLevel::WARNING)
 ///
 /// \return Constructed error struct
-inline vda5050_types::Error create_error(
+inline vda5050_core::types::Error create_error(
   const std::string& type, const std::string& description,
-  const std::vector<vda5050_types::ErrorReference>& refs,
-  vda5050_types::ErrorLevel level = vda5050_types::ErrorLevel::WARNING)
+  const std::vector<vda5050_core::types::ErrorReference>& refs,
+  vda5050_core::types::ErrorLevel level =
+    vda5050_core::types::ErrorLevel::WARNING)
 {
-  return vda5050_types::Error{type, refs, description, level};
+  return vda5050_core::types::Error{type, refs, description, level};
 }
 
 }  // namespace errors

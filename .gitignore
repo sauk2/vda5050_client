@@ -1,8 +1,12 @@
 *.eggs
 *.pyc
-tags
 *.swp
 *.swo
 *.vscode
+.vimrc
 compile_commands.json
+
 .cache/
+build/
+install/
+tags/
