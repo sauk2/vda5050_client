@@ -192,11 +192,11 @@ void PahoMqttClient::unsubscribe(const std::string& topic)
 
 //=============================================================================
 void PahoMqttClient::set_will(
-  const std::string& topic, const std::string& message, int qos)
+  const std::string& topic, const std::string& message, int qos, bool retain)
 {
   mqtt::will_options will;
   will.set_topic(topic);
-  will.set_retained(true);
+  will.set_retained(retain);
   will.set_qos(qos);
   will.set_payload(message);
 

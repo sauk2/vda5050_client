@@ -122,7 +122,8 @@ public:
 
   // Documentation inherited from MqttClientInterface
   void set_will(
-    const std::string& topic, const std::string& message, int qos) override;
+    const std::string& topic, const std::string& message, int qos,
+    bool retain = true) override;
 
   /// \brief Get a mutable reference to Paho configuration options
   ///

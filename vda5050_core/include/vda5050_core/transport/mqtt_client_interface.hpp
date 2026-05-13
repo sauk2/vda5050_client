@@ -47,6 +47,7 @@ public:
   /// \param topic Topic for publish
   /// \param message Raw message string
   /// \param qos Quality of service setting for the publish
+  /// \param retain Flag to retain the mesasge in the broker
   virtual void publish(
     const std::string& topic, const std::string& message, int qos,
     bool retain = false) = 0;
@@ -71,9 +72,11 @@ public:
   ///
   /// \param topic Topic to publish will message
   /// \param message Raw message string
-  /// \param Quality of service setting for the publish
+  /// \param qos Quality of service setting for the publish
+  /// \param retain Flag to retain the mesasge in the broker
   virtual void set_will(
-    const std::string& topic, const std::string& message, int qos) = 0;
+    const std::string& topic, const std::string& message, int qos,
+    bool retain = true) = 0;
 };
 
 /// \brief Create a default MQTT client interface
