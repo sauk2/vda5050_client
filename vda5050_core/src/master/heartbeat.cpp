@@ -44,7 +44,6 @@ HeartbeatListener::HeartbeatListener(
 HeartbeatListener::~HeartbeatListener()
 {
   stop_connection_heartbeat();
-  VDA5050_INFO("[" + id_ + "] Deconstructing HeartbeatListener");
 }
 
 //=============================================================================
@@ -58,7 +57,6 @@ void HeartbeatListener::start_connection_heartbeat()
     return;
   }
 
-  VDA5050_INFO("Starting Connection heartbeat listener");
   state_ = HeartbeatState::RUNNING;
   connection_thread_ = std::thread(&HeartbeatListener::listen, this);
 }
@@ -77,7 +75,6 @@ void HeartbeatListener::stop_connection_heartbeat()
       return;
     }
 
-    VDA5050_INFO("Stopping Connection heartbeat listener");
     state_ = HeartbeatState::STOPPING;
 
     conn_thread_to_join = std::move(connection_thread_);
@@ -94,8 +91,6 @@ void HeartbeatListener::stop_connection_heartbeat()
     std::lock_guard<std::mutex> lock(state_mutex_);
     state_ = HeartbeatState::STOPPED;
   }
-
-  VDA5050_INFO("Stopped Connection heartbeat listener");
 }
 
 //=============================================================================
@@ -109,7 +104,6 @@ void HeartbeatListener::received_connection()
   }
   std::lock_guard<std::mutex> lock(last_connection_report_mutex_);
   last_connection_report_ = get_current_time();
-  VDA5050_INFO("[" + id_ + "] Received connection heartbeat");
   message_received_.notify_all();
 }
 
@@ -190,7 +184,6 @@ void HeartbeatListener::listen()
     if (is_timeout())
     {
       disconnection_callback_();
-      VDA5050_INFO("[" + id_ + "] Heartbeat monitoring stopped after timeout");
       return;
     }
   }

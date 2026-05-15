@@ -44,7 +44,6 @@ AGV::AGV(
   max_queue_size_(max_queue_size),
   drop_oldest_(drop_oldest)
 {
-  VDA5050_INFO("[AGV] Created AGV instance: {}", agv_id_);
   // setup_subscriptions() must be called by the constructor's caller
   // after make_shared returns — weak_from_this() is only valid once
   // the shared_ptr ownership has been associated.
@@ -53,8 +52,6 @@ AGV::AGV(
 //=============================================================================
 AGV::~AGV()
 {
-  VDA5050_INFO("[AGV] Destroying AGV instance: {}", agv_id_);
-
   // Teardown order matters (per CLAUDE.md):
   //   1. Stop spinning   — halt the queue processor and heartbeat threads
   //   2. Release resources — unsubscribe per-topic; drop protocol_adapter_
@@ -77,8 +74,6 @@ AGV::~AGV()
     protocol_adapter_->unsubscribe<Visualization>();
   }
   protocol_adapter_.reset();
-
-  VDA5050_INFO("[AGV] AGV instance destroyed: {}", agv_id_);
 }
 
 //=============================================================================
@@ -102,8 +97,6 @@ void AGV::setup_subscriptions()
 //=============================================================================
 void AGV::stop()
 {
-  VDA5050_INFO("[AGV] Stopping AGV: {}", agv_id_);
-
   // Stop queue processor and heartbeat
   stop_queue_processor();
   cleanup_heartbeat();
@@ -121,15 +114,11 @@ void AGV::stop()
     order_queue_ = {};
     instant_actions_queue_ = {};
   }
-
-  VDA5050_INFO("[AGV] AGV stopped: {}", agv_id_);
 }
 
 //=============================================================================
 void AGV::restart()
 {
-  VDA5050_INFO("[AGV] Restarting AGV: {}", agv_id_);
-
   stop();
 
   // Clear cached messages and timestamps
@@ -144,15 +133,11 @@ void AGV::restart()
     last_visualization_.reset();
     last_visualization_time_.reset();
   }
-
-  VDA5050_INFO("[AGV] AGV restarted, ready for connections: {}", agv_id_);
 }
 
 //=============================================================================
 void AGV::pause()
 {
-  VDA5050_INFO("[AGV] Pausing AGV: {}", agv_id_);
-
   stop_queue_processor();
   cleanup_heartbeat();
 
@@ -161,19 +146,13 @@ void AGV::pause()
     connection_status_ = ConnectionState::OFFLINE;
     operational_state_ = AGVState::UNAVAILABLE;
   }
-
-  VDA5050_INFO("[AGV] AGV paused: {}", agv_id_);
 }
 
 //=============================================================================
 void AGV::resume()
 {
-  VDA5050_INFO("[AGV] Resuming AGV: {}", agv_id_);
-
   setup_heartbeat();
   start_queue_processor();
-
-  VDA5050_INFO("[AGV] AGV resumed: {}", agv_id_);
 }
 
 //=============================================================================
@@ -201,7 +180,6 @@ AGVState AGV::get_operational_state() const
 void AGV::set_connection_status(ConnectionState status)
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
-  auto old_status = connection_status_;
   connection_status_ = status;
 
   // When connection is lost, AGV becomes unavailable
@@ -212,31 +190,7 @@ void AGV::set_connection_status(ConnectionState status)
     if (operational_state_ != AGVState::UNAVAILABLE)
     {
       operational_state_ = AGVState::UNAVAILABLE;
-      VDA5050_INFO(
-        "[AGV] Operational state changed to UNAVAILABLE for {} (connection {})",
-        agv_id_,
-        status == ConnectionState::OFFLINE ? "OFFLINE" : "CONNECTIONBROKEN");
     }
-  }
-
-  // Log connection status change
-  if (old_status != status)
-  {
-    const char* status_str = "UNKNOWN";
-    switch (status)
-    {
-      case ConnectionState::ONLINE:
-        status_str = "ONLINE";
-        break;
-      case ConnectionState::OFFLINE:
-        status_str = "OFFLINE";
-        break;
-      case ConnectionState::CONNECTIONBROKEN:
-        status_str = "CONNECTIONBROKEN";
-        break;
-    }
-    VDA5050_INFO(
-      "[AGV] Connection status changed to {} for {}", status_str, agv_id_);
   }
 }
 
@@ -245,25 +199,6 @@ void AGV::set_operational_state(AGVState state)
 {
   std::lock_guard<std::mutex> lock(state_mutex_);
   operational_state_ = state;
-
-  const char* state_str = "UNKNOWN";
-  switch (state)
-  {
-    case AGVState::STATE_UNKNOWN:
-      state_str = "STATE_UNKNOWN";
-      break;
-    case AGVState::AVAILABLE:
-      state_str = "AVAILABLE";
-      break;
-    case AGVState::UNAVAILABLE:
-      state_str = "UNAVAILABLE";
-      break;
-    case AGVState::ERROR:
-      state_str = "ERROR";
-      break;
-  }
-  VDA5050_INFO(
-    "[AGV] Operational state changed to {} for {}", state_str, agv_id_);
 }
 
 //=============================================================================
@@ -290,8 +225,6 @@ void AGV::setup_heartbeat()
     return;  // Already set up
   }
 
-  VDA5050_INFO("[AGV] Setting up heartbeat for {}", agv_id_);
-
   state_heartbeat_ = std::make_unique<HeartbeatListener>(
     agv_id_ + "_state_heartbeat", state_heartbeat_interval_,
     [this]() { on_state_heartbeat_timeout(); });
@@ -309,8 +242,6 @@ void AGV::cleanup_heartbeat()
     {
       return;  // Nothing to clean up
     }
-
-    VDA5050_INFO("[AGV] Cleaning up heartbeat for {}", agv_id_);
 
     heartbeat_to_stop = std::move(state_heartbeat_);
   }
@@ -493,7 +424,6 @@ bool AGV::send_order(const Order& order)
   order_queue_.push(order);
   queue_cv_.notify_one();
 
-  VDA5050_INFO("[AGV] Queued order for AGV: {}", agv_id_);
   return true;
 }
 
@@ -521,7 +451,6 @@ bool AGV::send_instant_actions(const InstantActions& actions)
   instant_actions_queue_.push(actions);
   queue_cv_.notify_one();
 
-  VDA5050_INFO("[AGV] Queued instant actions for AGV: {}", agv_id_);
   return true;
 }
 
@@ -549,8 +478,6 @@ void AGV::start_queue_processor()
     return;  // Already running
   }
 
-  VDA5050_INFO("[AGV] Starting queue processor for {}", agv_id_);
-
   {
     std::lock_guard<std::mutex> queue_lock(queue_mutex_);
     stop_processing_ = false;
@@ -572,8 +499,6 @@ void AGV::stop_queue_processor()
       return;  // Not running
     }
 
-    VDA5050_INFO("[AGV] Stopping queue processor for {}", agv_id_);
-
     {
       std::lock_guard<std::mutex> queue_lock(queue_mutex_);
       stop_processing_ = true;
@@ -588,15 +513,11 @@ void AGV::stop_queue_processor()
   {
     thread_to_join.join();
   }
-
-  VDA5050_INFO("[AGV] Queue processor stopped for {}", agv_id_);
 }
 
 //=============================================================================
 void AGV::process_queues()
 {
-  VDA5050_INFO("[AGV] Queue processing thread started for {}", agv_id_);
-
   while (true)
   {
     std::optional<Order> order;
@@ -642,8 +563,6 @@ void AGV::process_queues()
       publish_order(*order);
     }
   }
-
-  VDA5050_INFO("[AGV] Queue processing thread stopped for {}", agv_id_);
 }
 
 //=============================================================================
