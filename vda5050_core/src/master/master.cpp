@@ -28,67 +28,31 @@ namespace vda5050_core {
 namespace master {
 
 //=============================================================================
-VDA5050Master::VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client)
-: mqtt_client_(std::move(mqtt_client))
+VDA5050Master::VDA5050Master(MqttClientFactory client_factory)
+: mqtt_client_factory_(std::move(client_factory))
 {
-  VDA5050_INFO("[VDA5050Master] Created VDA5050Master instance");
+  // Nothing to do here ...
 }
 
 //=============================================================================
-VDA5050Master::~VDA5050Master()
-{
-  VDA5050_INFO("[VDA5050Master] Destroying VDA5050Master instance");
-  disconnect();
-  VDA5050_INFO("[VDA5050Master] VDA5050Master instance destroyed");
-}
+VDA5050Master::~VDA5050Master() = default;
 
 //=============================================================================
-void VDA5050Master::connect()
+void VDA5050Master::stop()
 {
-  if (!mqtt_client_)
+  std::lock_guard<std::mutex> lock(agv_mutex_);
+  for (auto& [id, agv] : agvs_)
   {
-    VDA5050_WARN("[VDA5050Master] Cannot connect: no MQTT client");
-    return;
+    agv->stop();
   }
 
-  if (mqtt_client_->connected())
-  {
-    VDA5050_WARN("[VDA5050Master] Already connected");
-    return;
-  }
-
-  VDA5050_INFO("[VDA5050Master] Connecting MQTT client");
-  mqtt_client_->connect();
-}
-
-//=============================================================================
-void VDA5050Master::disconnect()
-{
-  if (!mqtt_client_)
-  {
-    return;
-  }
-
-  if (!mqtt_client_->connected())
-  {
-    return;
-  }
-
-  VDA5050_INFO("[VDA5050Master] Disconnecting MQTT client");
-  mqtt_client_->disconnect();
-  VDA5050_INFO("[VDA5050Master] Disconnected");
-}
-
-//=============================================================================
-bool VDA5050Master::is_connected() const
-{
-  return mqtt_client_ && mqtt_client_->connected();
+  agvs_.clear();
 }
 
 //=============================================================================
 void VDA5050Master::onboard_agv(
   const std::string& manufacturer, const std::string& serial_number,
-  size_t max_queue_size, bool drop_oldest)
+  const std::string& broker_address, size_t max_queue_size, bool drop_oldest)
 {
   std::string agv_id = manufacturer + "/" + serial_number;
 
@@ -100,14 +64,18 @@ void VDA5050Master::onboard_agv(
     return;
   }
 
+  auto protocol_adapter = ProtocolAdapter::make(
+    mqtt_client_factory_(broker_address, agv_id), InterfaceName, Version,
+    manufacturer, serial_number);
+
+  protocol_adapter->connect();
+
   // Create AGV instance with a new protocol adapter. Pass weak_from_this()
   // as the back-pointer so the AGV can dispatch incoming messages to the
   // master's virtual callbacks (on_state, on_connection, etc.) while
   // detecting master destruction cleanly via lock().
   auto agv = std::make_shared<AGV>(
-    ProtocolAdapter::make(
-      mqtt_client_, InterfaceName, Version, manufacturer, serial_number),
-    manufacturer, serial_number, max_queue_size, drop_oldest,
+    protocol_adapter, manufacturer, serial_number, max_queue_size, drop_oldest,
     StateHeartbeatInterval, weak_from_this());
 
   // Subscriptions are wired here (not in AGV's ctor) so that
@@ -116,8 +84,6 @@ void VDA5050Master::onboard_agv(
   agv->setup_subscriptions();
 
   agvs_[agv_id] = std::move(agv);
-
-  VDA5050_INFO("[VDA5050Master] Onboarded AGV: {}", agv_id);
 }
 
 //=============================================================================
@@ -145,8 +111,6 @@ void VDA5050Master::offboard_agv(
   // the broker stops routing to lambdas captured at subscribe time
   // before the AGV instance is gone.
   agv->stop();
-
-  VDA5050_INFO("[VDA5050Master] Offboarded AGV: {}", agv_id);
 }
 
 //=============================================================================
@@ -242,6 +206,13 @@ void VDA5050Master::on_factsheet(
 void VDA5050Master::on_visualization(
   const std::string& /*agv_id*/, const Visualization& /*visualization*/)
 {
+}
+
+//=============================================================================
+std::unique_ptr<MqttClientInterface> VDA5050Master::default_client_factory(
+  const std::string& broker_address, const std::string& client_id)
+{
+  return transport::create_default_client_unique(broker_address, client_id);
 }
 
 }  // namespace master

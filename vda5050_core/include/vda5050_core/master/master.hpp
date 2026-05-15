@@ -76,53 +76,18 @@ namespace master {
 class VDA5050Master : public std::enable_shared_from_this<VDA5050Master>
 {
 public:
-  /**
-   * @brief Construct a VDA5050 master with shared MQTT client and broker address
-   * @param mqtt_client Shared MQTT client for subscriptions
-   *
-   * The mqtt_client is used to create protocol adapters for each onboarded AGV.
-   *
-   * IMPORTANT: must be constructed via `std::make_shared<MyMaster>(...)` —
-   * see class doc-comment.
-   *
-   * Example usage:
-   * @code
-   * auto client = vda5050_core::mqtt_client::create_default_client(broker, "master");
-   * auto master = std::make_shared<MyMaster>(client);
-   * master->connect();
-   * @endcode
-   */
-  explicit VDA5050Master(std::shared_ptr<MqttClientInterface> mqtt_client);
+  using MqttClientFactory = std::function<std::unique_ptr<MqttClientInterface>(
+    const std::string&, const std::string&)>;
+
+  explicit VDA5050Master(
+    MqttClientFactory client_factory = default_client_factory);
 
   /**
    * @brief Virtual destructor - disconnects MQTT client
    */
   virtual ~VDA5050Master();
 
-  // Non-copyable, non-movable
-  VDA5050Master(const VDA5050Master&) = delete;
-  VDA5050Master& operator=(const VDA5050Master&) = delete;
-  VDA5050Master(VDA5050Master&&) = delete;
-  VDA5050Master& operator=(VDA5050Master&&) = delete;
-
-  // ============================================================================
-  // Connection Management
-  // ============================================================================
-
-  /**
-   * @brief Connect the MQTT client
-   */
-  void connect();
-
-  /**
-   * @brief Disconnect the MQTT client
-   */
-  void disconnect();
-
-  /**
-   * @brief Check if MQTT client is connected
-   */
-  bool is_connected() const;
+  void stop();
 
   // ============================================================================
   // AGV Onboarding/Offboarding
@@ -140,7 +105,8 @@ public:
    */
   void onboard_agv(
     const std::string& manufacturer, const std::string& serial_number,
-    size_t max_queue_size = 10, bool drop_oldest = true);
+    const std::string& broker_address, size_t max_queue_size = 10,
+    bool drop_oldest = true);
 
   /**
    * @brief Offboard an AGV to stop message routing
@@ -243,6 +209,11 @@ public:
     const std::string& agv_id, const Visualization& visualization);
 
 private:
+  MqttClientFactory mqtt_client_factory_;
+
+  static std::unique_ptr<MqttClientInterface> default_client_factory(
+    const std::string& broker_address, const std::string& client_id);
+
   // ============================================================================
   // Internal AGV lookup
   // ============================================================================
@@ -252,9 +223,6 @@ private:
   // ============================================================================
   // Member Variables
   // ============================================================================
-
-  // Shared MQTT client for protocol adapters
-  std::shared_ptr<MqttClientInterface> mqtt_client_;
 
   // Onboarded AGVs (shared_ptr allows safe access)
   mutable std::mutex agv_mutex_;
