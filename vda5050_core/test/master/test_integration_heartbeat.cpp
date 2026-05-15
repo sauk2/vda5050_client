@@ -47,8 +47,6 @@ public:
 
   std::chrono::system_clock::time_point get_current_time() override
   {
-    VDA5050_INFO(
-      "get_current_time with skip of " + std::to_string(time_to_skip_));
     return std::chrono::system_clock::now() +
            std::chrono::seconds(time_to_skip_);
   }
@@ -60,10 +58,7 @@ public:
     return 1;  // Check every 1 second in tests (15x faster than production)
   }
 
-  ~MockHeartbeatListener()
-  {
-    VDA5050_INFO("MockHeartbeatListener destroyed");
-  }
+  ~MockHeartbeatListener() = default;
 
   void trigger_timeout()
   {
@@ -80,7 +75,6 @@ TEST(HeartbeatListenerTest, HeartbeatListenerInit)
     "test_listener", ConnectionHeartbeatInterval,
     [&]() {
       // Timeout callback
-      VDA5050_INFO("Timeout callback");
     },
     ConnectionHeartbeatInterval - 1);
 
@@ -95,7 +89,6 @@ TEST(HeartbeatListenerTest, HeartbeatReceivedNoTimeout)
     "test_listener", ConnectionHeartbeatInterval,
     [&]() {
       // Timeout callback
-      VDA5050_INFO("Timeout callback");
     },
     ConnectionHeartbeatInterval - 1);
 
@@ -122,15 +115,7 @@ TEST(HeartbeatListenerTest, HeartbeatNotReceivedTimeout)
     "test_listener", ConnectionHeartbeatInterval,
     [&heartbeat_failed]() {
       // Timeout callback
-      VDA5050_INFO("Timeout callback");
-      VDA5050_INFO(
-        "Heartbeat_failed before store: " +
-        std::to_string(heartbeat_failed.load()));
       heartbeat_failed.store(true);
-      VDA5050_INFO(
-        "Heartbeat_failed after store: " +
-        std::to_string(heartbeat_failed.load()));
-      // ASSERT_TRUE(heartbeat_failed->load());
     },
     ConnectionHeartbeatInterval + 1);
   hb_listener->trigger_timeout();
@@ -146,7 +131,6 @@ TEST(HeartbeatListenerTest, HeartbeatReceivedTimeout)
     "test_listener", ConnectionHeartbeatInterval,
     [&heartbeat_failed]() {
       // Timeout callback
-      VDA5050_INFO("Timeout callback");
       heartbeat_failed.store(true);
     },
     ConnectionHeartbeatInterval + 1);

@@ -44,82 +44,106 @@ public:
     (override));
   MOCK_METHOD(void, unsubscribe, (const std::string&), (override));
   MOCK_METHOD(
-    void, set_will, (const std::string&, const std::string&, int), (override));
+    void, set_will, (const std::string&, const std::string&, int, bool),
+    (override));
 };
 
 class MasterTeardownTest : public ::testing::Test
 {
 protected:
-  std::shared_ptr<MockMqttClient> mock_;
+  std::vector<MockMqttClient*> mock_clients_;
+  std::string broker_address_;
+  std::shared_ptr<VDA5050Master> master_;
 
   void SetUp() override
   {
-    mock_ = std::make_shared<MockMqttClient>();
+    broker_address_ = "tcp://localhost:1883";
+
+    master_ = std::make_shared<VDA5050Master>(
+      [this](auto, auto) { return make_mqtt_client(); });
+  }
+
+  std::unique_ptr<MqttClientInterface> make_mqtt_client()
+  {
+    auto client = std::make_unique<MockMqttClient>();
+    auto* raw = client.get();
+
     // Allow connect() / connected() / subscribe() / disconnect() during
     // the test setup phase without explicit per-call expectations.
-    EXPECT_CALL(*mock_, connect()).Times(::testing::AnyNumber());
-    EXPECT_CALL(*mock_, disconnect()).Times(::testing::AnyNumber());
-    EXPECT_CALL(*mock_, connected())
+    EXPECT_CALL(*raw, connect()).Times(::testing::AnyNumber());
+    EXPECT_CALL(*raw, disconnect()).Times(::testing::AnyNumber());
+    EXPECT_CALL(*raw, connected())
       .Times(::testing::AnyNumber())
       .WillRepeatedly(::testing::Return(true));
-    EXPECT_CALL(*mock_, subscribe(::testing::_, ::testing::_, ::testing::_))
+    EXPECT_CALL(*raw, subscribe(::testing::_, ::testing::_, ::testing::_))
       .Times(::testing::AnyNumber());
+
+    mock_clients_.push_back(raw);
+
+    return client;
   }
 };
 
 TEST_F(MasterTeardownTest, OffboardAgvUnsubscribesAllPerAgvTopics)
 {
-  auto master = std::make_shared<VDA5050Master>(mock_);
-  master->connect();
-  master->onboard_agv("acme", "agv-001");
+  master_->onboard_agv("acme", "agv-001", broker_address_);
+
+  ASSERT_EQ(mock_clients_.size(), 1);
+
+  auto* mock = mock_clients_[0];
 
   EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/connection")))
+    *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/connection")))
     .Times(1);
-  EXPECT_CALL(*mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/state")))
-    .Times(1);
-  EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/factsheet")))
+  EXPECT_CALL(*mock, unsubscribe(::testing::HasSubstr("acme/agv-001/state")))
     .Times(1);
   EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/visualization")))
+    *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/factsheet")))
+    .Times(1);
+  EXPECT_CALL(
+    *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/visualization")))
     .Times(1);
 
-  master->offboard_agv("acme", "agv-001");
+  master_->offboard_agv("acme", "agv-001");
 }
 
 TEST_F(MasterTeardownTest, MasterDestructionUnsubscribesAllPerAgvTopics)
 {
-  EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/connection")))
-    .Times(1);
-  EXPECT_CALL(*mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/state")))
-    .Times(1);
-  EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/factsheet")))
-    .Times(1);
-  EXPECT_CALL(
-    *mock_, unsubscribe(::testing::HasSubstr("acme/agv-001/visualization")))
-    .Times(1);
-
   {
-    auto master = std::make_shared<VDA5050Master>(mock_);
-    master->connect();
-    master->onboard_agv("acme", "agv-001");
-    // master leaves scope → AGV destructor runs → unsubscribe chain
+    master_->onboard_agv("acme", "agv-001", broker_address_);
+
+    ASSERT_EQ(mock_clients_.size(), 1);
+
+    auto* mock = mock_clients_[0];
+
+    EXPECT_CALL(
+      *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/connection")))
+      .Times(1);
+    EXPECT_CALL(*mock, unsubscribe(::testing::HasSubstr("acme/agv-001/state")))
+      .Times(1);
+    EXPECT_CALL(
+      *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/factsheet")))
+      .Times(1);
+    EXPECT_CALL(
+      *mock, unsubscribe(::testing::HasSubstr("acme/agv-001/visualization")))
+      .Times(1);
   }
+  // master leaves scope -> AGV destructor runs -> unsubscribe chain
 }
 
 TEST_F(MasterTeardownTest, MultipleAgvsAllUnsubscribeOnOffboard)
 {
-  auto master = std::make_shared<VDA5050Master>(mock_);
-  master->connect();
-  master->onboard_agv("mfg1", "001");
-  master->onboard_agv("mfg2", "002");
+  master_->onboard_agv("mfg1", "001", broker_address_);
+  master_->onboard_agv("mfg2", "002", broker_address_);
 
-  EXPECT_CALL(*mock_, unsubscribe(::testing::HasSubstr("mfg1/001/"))).Times(4);
-  EXPECT_CALL(*mock_, unsubscribe(::testing::HasSubstr("mfg2/002/"))).Times(4);
+  ASSERT_EQ(mock_clients_.size(), 2);
 
-  master->offboard_agv("mfg1", "001");
-  master->offboard_agv("mfg2", "002");
+  auto* mock_1 = mock_clients_[0];
+  auto* mock_2 = mock_clients_[1];
+
+  EXPECT_CALL(*mock_1, unsubscribe(::testing::HasSubstr("mfg1/001/"))).Times(4);
+  EXPECT_CALL(*mock_2, unsubscribe(::testing::HasSubstr("mfg2/002/"))).Times(4);
+
+  master_->offboard_agv("mfg1", "001");
+  master_->offboard_agv("mfg2", "002");
 }

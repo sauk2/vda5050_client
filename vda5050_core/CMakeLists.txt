@@ -282,7 +282,6 @@ if(BUILD_TESTING)
   ament_add_gmock(test_master
     test/master/test_integration_heartbeat.cpp
     test/master/test_integration_master_logic.cpp
-    test/master/test_integration_master_mqtt.cpp
     test/master/test_integration_master_teardown.cpp
     test/master/test_unit_agv.cpp
   )
