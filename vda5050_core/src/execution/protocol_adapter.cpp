@@ -24,28 +24,71 @@ namespace execution {
 
 //=============================================================================
 std::shared_ptr<ProtocolAdapter> ProtocolAdapter::make(
-  std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
+  std::unique_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
   const std::string& interface, const std::string& version,
   const std::string& manufacturer, const std::string& serial_number)
 {
   auto adapter = std::shared_ptr<ProtocolAdapter>(new ProtocolAdapter(
-    mqtt_client, interface, version, manufacturer, serial_number));
+    std::move(mqtt_client), interface, version, manufacturer, serial_number));
   return adapter;
 }
 
 //=============================================================================
+void ProtocolAdapter::connect()
+{
+  if (!mqtt_client_) return;
+
+  try
+  {
+    mqtt_client_->connect();
+  }
+  catch (const std::exception& e)
+  {
+    VDA5050_ERROR(
+      "Unexpected error during MQTT client connection: {}", e.what());
+  }
+}
+
+//=============================================================================
+void ProtocolAdapter::disconnect()
+{
+  if (!mqtt_client_) return;
+
+  try
+  {
+    mqtt_client_->disconnect();
+  }
+  catch (const std::exception& e)
+  {
+    VDA5050_ERROR(
+      "Unexpected error during MQTT client disconnection: {}", e.what());
+  }
+}
+
+//=============================================================================
+bool ProtocolAdapter::connected()
+{
+  if (mqtt_client_)
+  {
+    return mqtt_client_->connected();
+  }
+  return false;
+}
+
+//=============================================================================
 ProtocolAdapter::ProtocolAdapter(
-  std::shared_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
+  std::unique_ptr<vda5050_core::transport::MqttClientInterface> mqtt_client,
   const std::string& interface, const std::string& version,
   const std::string& manufacturer, const std::string& serial_number)
-: mqtt_client_(mqtt_client),
+: mqtt_client_(std::move(mqtt_client)),
   interface_(interface),
   version_(version),
   manufacturer_(manufacturer),
   serial_number_(serial_number)
 {
   std::string topic_prefix = fmt::format(
-    "{}/{}/{}/{}", interface_, version_, manufacturer_, serial_number_);
+    "{}/{}/{}/{}", interface_, get_topic_version(version_), manufacturer_,
+    serial_number_);
 
   topic_names_ = {
     {std::type_index(typeid(vda5050_core::types::Connection)),
@@ -68,6 +111,15 @@ ProtocolAdapter::ProtocolAdapter(
     {std::type_index(typeid(vda5050_core::types::InstantActions)), 0},
     {std::type_index(typeid(vda5050_core::types::Factsheet)), 0},
     {std::type_index(typeid(vda5050_core::types::Visualization)), 0}};
+}
+
+//=============================================================================
+std::string ProtocolAdapter::get_topic_version(const std::string& version)
+{
+  // TODO(sauk2): Enforce stricter version checking before parsing string
+  auto position = version.find('.');
+  std::string major = version.substr(0, position);
+  return "v" + major;
 }
 
 }  // namespace execution
