@@ -68,14 +68,15 @@ public:
     (override));
   MOCK_METHOD(void, unsubscribe, (const std::string&), (override));
   MOCK_METHOD(
-    void, set_will, (const std::string&, const std::string&, int), (override));
+    void, set_will, (const std::string&, const std::string&, int, bool),
+    (override));
 };
 
 template <typename T>
 class ProtocolAdapterTest : public testing::Test
 {
 protected:
-  std::shared_ptr<MockMqttClient> mock_;
+  MockMqttClient* mock_{nullptr};
   std::shared_ptr<ProtocolAdapter> adapter_;
 
   std::string interface_;
@@ -86,31 +87,32 @@ protected:
   std::string topic_prefix_;
 
   int qos_;
-  bool retained_;
+  bool retain_;
 
   void SetUp()
   {
     interface_ = "uagv";
-    version_ = "v2";
+    version_ = "2.0.0";
     manufacturer_ = "ROS-I";
     serial_number_ = "S001";
 
-    mock_ = std::make_shared<MockMqttClient>();
+    auto protocol = std::make_unique<MockMqttClient>();
+    mock_ = protocol.get();
 
     adapter_ = ProtocolAdapter::make(
-      mock_, interface_, version_, manufacturer_, serial_number_);
+      std::move(protocol), interface_, version_, manufacturer_, serial_number_);
 
     topic_prefix_ = fmt::format(
-      "{}/{}/{}/{}/", interface_, version_, manufacturer_, serial_number_);
+      "{}/{}/{}/{}/", interface_, "v2", manufacturer_, serial_number_);
 
     qos_ = 0;
-    retained_ = false;
+    retain_ = false;
   }
 
   void TearDown()
   {
-    mock_.reset();
     adapter_.reset();
+    mock_ = nullptr;
   }
 };
 
@@ -134,6 +136,24 @@ T make_valid_message()
 
 TYPED_TEST_SUITE(ProtocolAdapterTest, MessageTypes);
 
+TYPED_TEST(ProtocolAdapterTest, Connect)
+{
+  EXPECT_CALL(*this->mock_, connect()).Times(1);
+  this->adapter_->connect();
+}
+
+TYPED_TEST(ProtocolAdapterTest, Disconnect)
+{
+  EXPECT_CALL(*this->mock_, disconnect()).Times(1);
+  this->adapter_->disconnect();
+}
+
+TYPED_TEST(ProtocolAdapterTest, Connected)
+{
+  EXPECT_CALL(*this->mock_, connected).Times(1);
+  this->adapter_->connected();
+}
+
 TYPED_TEST(ProtocolAdapterTest, PublishMessage)
 {
   TypeParam msg = make_valid_message<TypeParam>();
@@ -141,10 +161,10 @@ TYPED_TEST(ProtocolAdapterTest, PublishMessage)
   EXPECT_CALL(
     *this->mock_, publish(
                     testing::StartsWith(this->topic_prefix_), testing::_,
-                    this->qos_, this->retained_))
+                    this->qos_, this->retain_))
     .WillOnce([&](
                 const std::string& /*topic*/, const std::string& message,
-                int /*qos*/, bool /*retained*/) {
+                int /*qos*/, bool /*retain*/) {
       auto j = nlohmann::json::parse(message);
 
       EXPECT_EQ(j["headerId"], 0);
@@ -153,7 +173,7 @@ TYPED_TEST(ProtocolAdapterTest, PublishMessage)
       EXPECT_EQ(j["serialNumber"], this->serial_number_);
     });
 
-  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
+  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retain_);
 }
 
 TYPED_TEST(ProtocolAdapterTest, SubscribeMessage)
@@ -234,16 +254,38 @@ TYPED_TEST(ProtocolAdapterTest, HeaderIncrement)
   EXPECT_CALL(
     *this->mock_, publish(
                     testing::StartsWith(this->topic_prefix_), testing::_,
-                    this->qos_, this->retained_))
+                    this->qos_, this->retain_))
     .WillRepeatedly([&](
                       const std::string& /*topic*/, const std::string& message,
-                      int /*qos*/, bool /*retained*/) {
+                      int /*qos*/, bool /*retain*/) {
       auto j = nlohmann::json::parse(message);
 
       EXPECT_EQ(j["headerId"].get<uint32_t>(), header_count);
       header_count++;
     });
 
-  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
-  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retained_);
+  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retain_);
+  this->adapter_->template publish<TypeParam>(msg, this->qos_, this->retain_);
+}
+
+TYPED_TEST(ProtocolAdapterTest, SetWill)
+{
+  TypeParam msg = make_valid_message<TypeParam>();
+
+  EXPECT_CALL(
+    *this->mock_, set_will(
+                    testing::StartsWith(this->topic_prefix_), testing::_,
+                    this->qos_, this->retain_))
+    .WillOnce([&](
+                const std::string& /*topic*/, const std::string& message,
+                int /*qos*/, bool /*retain*/) {
+      auto j = nlohmann::json::parse(message);
+
+      EXPECT_EQ(j["headerId"], 0);
+      EXPECT_EQ(j["version"], this->version_);
+      EXPECT_EQ(j["manufacturer"], this->manufacturer_);
+      EXPECT_EQ(j["serialNumber"], this->serial_number_);
+    });
+
+  this->adapter_->template set_will<TypeParam>(msg, this->qos_, this->retain_);
 }
